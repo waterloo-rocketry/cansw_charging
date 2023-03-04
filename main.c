@@ -15,6 +15,10 @@ int main(void) {
     // set up pins
     gpio_init();
     
+    // initialize mcc functions
+    ADCC_Initialize();
+    FVR_Initialize();
+
     // intiialize the external oscillator
     oscillator_init();
 
