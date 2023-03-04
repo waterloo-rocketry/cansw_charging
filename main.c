@@ -1,6 +1,9 @@
 #include <xc.h>
 #include "canlib.h"
 
+#include "mcc_generated_files/adcc.h"
+#include "mcc_generated_files/fvr.h"
+
 #include "device_config.h"
 #include "platform.h"
 
@@ -59,7 +62,11 @@ int main(void) {
             
             // We're alive, let's tell the world!
             can_msg_t board_stat_msg;
-            build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
+            // based off other examples (cansw_arming)
+            // just go and send all the can messages here
+            // making sure to txb_enqueue said message
+            // build_analog_data_msg(millis(), )
+            // build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
             txb_enqueue(&board_stat_msg);
         }
         //send any queued CAN messages
@@ -76,16 +83,14 @@ static void can_msg_handler(const can_msg_t *msg) {
     }
 
     switch (msg_type) {
-        case MSG_LEDS_ON:
-            RED_LED_SET(1);
-            BLUE_LED_SET(1);
-            WHITE_LED_SET(1);
-            break;
-
-        case MSG_LEDS_OFF:
-            RED_LED_SET(0);
-            BLUE_LED_SET(0);
-            WHITE_LED_SET(0);
+        case MSG_ACTUATOR_CMD:
+            int act_state = get_req_actuator_state(msg)
+            // jack said these actuator states might change so yeah
+            if (act_state==ACTUATOR_OPEN) {
+                // turn on EN_5V
+            } else if (act_state==ACTUATOR_CLOSED) {
+                // turn off EN_5V
+            }
             break;
 
         // all the other ones - do nothing

@@ -6,22 +6,22 @@
 
 void gpio_init(void) {
     // set as outputs
-    TRISB0 = 0;
-    TRISB1 = 0;
-    TRISB2 = 0;
+    TRISC5 = 0;
+    TRISC6 = 0;
+    TRISC7 = 0;
     
     // turn LEDs off
-    LATB0 = !LED_ON;
-    LATB1 = !LED_ON;
-    LATB2 = !LED_ON;
+    LATC5 = !LED_ON;
+    LATC6 = !LED_ON;
+    LATC7 = !LED_ON;
 }
 
 void RED_LED_SET(bool value) {
-    LATB0 = !value ^ LED_ON;
+    LATC5 = !value ^ LED_ON;
 }
 void BLUE_LED_SET(bool value) {
-    LATB1 = !value ^ LED_ON;
+    LATC6 = !value ^ LED_ON;
 }
 void WHITE_LED_SET(bool value) {
-    LATB2 = !value ^ LED_ON;
+    LATC7 = !value ^ LED_ON;
 }
