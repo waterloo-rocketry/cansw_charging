@@ -25,6 +25,17 @@ void pin_init(void) {
     LATC7 = !LED_ON;
 
     // Battery charger
+    TRISA5 = 1; // set A5 as an input to toggle battery charging
+    LATA5 = 1; //either 1 or 0 to enable it, not sure which, but should default be on
+
+    TRISA4 = 0; // set A4 to be an output for battery output voltage
+
+    // VSENSE
+    TRISC2 = 1; //set BATT_VSENSE to be output
+    ANSELC2 = 1; //enable analog reading
+
+    TRISC3 = 1; //set VSW_VSENSE to be output
+    ANSELC3 = 1; //enable analog reading
 }
 
 void RED_LED_SET(bool value) {

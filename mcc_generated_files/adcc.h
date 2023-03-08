@@ -86,6 +86,7 @@ typedef signed short long int int24_t;
    None
  */
 
+// need to rename these based on the datasheet (go read later)
 typedef enum
 {
     channel_VBAT =  0x0,

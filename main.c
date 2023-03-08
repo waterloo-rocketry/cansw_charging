@@ -62,11 +62,19 @@ int main(void) {
             
             // We're alive, let's tell the world!
 
+            //sends battery charging voltage
+            can_msg_t sensor_analog_battery_charging_msg;
+            build_analog_data_msg(millis(), 
+                                    SENSOR_BATT_CURR, //not sure if this is correct enum, should be BATT_VSENSE?
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR), //not sure if this is correct channel
+                                    &sensor_analog_battery_charging_msg);
+            txb_enqueue(&sensor_analog_battery_charging_msg);
+
             //sends BATT voltage (3.2x BATT_VSENSE)
             can_msg_t sensor_analog_battery_msg;
             build_analog_data_msg(millis(), 
                                     SENSOR_BATT_CURR, //not sure if this is correct enum, should be BATT_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*3.2), //not sure if this is correct channel
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*SCALE*3.2), //not sure if this is correct channel
                                     &sensor_analog_batter_msg);
             txb_enqueue(&sensor_analog_battery_msg);
 
@@ -74,8 +82,8 @@ int main(void) {
             can_msg_t sensor_analog_vsw_msg;
             build_analog_data_msg(millis(), 
                                     SENSOR_BUS_CURR, //not sure if this is correct enum, should be bus_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*3.2), //not sure if this is correct channel
-                                    &sensor_analog_vsw_msg);     
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*SCALE*3.2), //not sure if this is correct channel
+                                    &sensor_analog_vsw_msg);
             txb_enqueue(&sensor_analog_vsw_msg);
         }
         //send any queued CAN messages
