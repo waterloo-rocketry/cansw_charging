@@ -16,7 +16,7 @@ uint8_t tx_pool[100];
 
 int main(void) {
     // set up pins
-    gpio_init();
+    pin_init();
     
     // initialize mcc functions
     ADCC_Initialize();
@@ -61,13 +61,22 @@ int main(void) {
             heartbeat = !heartbeat;
             
             // We're alive, let's tell the world!
-            can_msg_t board_stat_msg;
-            // based off other examples (cansw_arming)
-            // just go and send all the can messages here
-            // making sure to txb_enqueue said message
-            // build_analog_data_msg(millis(), )
-            // build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
-            txb_enqueue(&board_stat_msg);
+
+            //sends BATT voltage (3.2x BATT_VSENSE)
+            can_msg_t sensor_analog_battery_msg;
+            build_analog_data_msg(millis(), 
+                                    SENSOR_BATT_CURR, //not sure if this is correct enum, should be BATT_VSENSE?
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR), //not sure if this is correct channel
+                                    &sensor_analog_batter_msg);
+            txb_enqueue(&sensor_analog_battery_msg);
+
+            //sends ground connected voltage (3.2x VSW_VSENSE)
+            can_msg_t sensor_analog_vsw_msg;
+            build_analog_data_msg(millis(), 
+                                    SENSOR_BUS_CURR, //not sure if this is correct enum, should be bus_VSENSE?
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR), //not sure if this is correct channel
+                                    &sensor_analog_vsw_msg);     
+            txb_enqueue(&sensor_analog_vsw_msg);
         }
         //send any queued CAN messages
         txb_heartbeat();
