@@ -62,29 +62,28 @@ int main(void) {
             
             // We're alive, let's tell the world!
 
-            //sends battery charging voltage
-            can_msg_t sensor_analog_battery_charging_msg;
-            build_analog_data_msg(millis(), 
-                                    SENSOR_BATT_CURR, //not sure if this is correct enum, should be BATT_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR), //not sure if this is correct channel
-                                    &sensor_analog_battery_charging_msg);
-            txb_enqueue(&sensor_analog_battery_charging_msg);
+            // Battery charing current
+            can_msg_t batt_cur_msg;
+            build_analog_data_msg(millis(),
+                                    SENSOR_BATT_CURR,
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)),
+                                    &batt_cur_msg);
+            txb_enqueue(&batt_cur_msg);
 
-            //sends BATT voltage (3.2x BATT_VSENSE)
-            can_msg_t sensor_analog_battery_msg;
-            build_analog_data_msg(millis(), 
-                                    SENSOR_BATT_CURR, //not sure if this is correct enum, should be BATT_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*SCALE*3.2), //not sure if this is correct channel
-                                    &sensor_analog_batter_msg);
-            txb_enqueue(&sensor_analog_battery_msg);
+            // Voltage health messages
+            can_msg_t batt_volt_msg;
+            build_analog_data_msg(millis(),
+                                    SENSOR_BATT_CURR, //not sure if this is correct enum, is there BATT_VSENSE?
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*RESISTANCE_FACTOR),
+                                    &batt_volt_msg);
+            txb_enqueue(&batt_volt_msg);
 
-            //sends ground connected voltage (3.2x VSW_VSENSE)
-            can_msg_t sensor_analog_vsw_msg;
-            build_analog_data_msg(millis(), 
-                                    SENSOR_BUS_CURR, //not sure if this is correct enum, should be bus_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_VSENSE)*ANALOG_SCALAR*SCALE*3.2), //not sure if this is correct channel
-                                    &sensor_analog_vsw_msg);
-            txb_enqueue(&sensor_analog_vsw_msg);
+            can_msg_t bus_volt_msg;
+            build_analog_data_msg(millis(),
+                                    SENSOR_BUS_CURR, //not sure if this is correct enum, is there BUS_VSENSE?
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_FACTOR),
+                                    &bus_volt_msg);
+            txb_enqueue(&bus_volt_msg);
         }
         //send any queued CAN messages
         txb_heartbeat();

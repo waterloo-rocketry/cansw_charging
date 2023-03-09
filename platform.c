@@ -29,6 +29,7 @@ void pin_init(void) {
     LATA5 = 1; //either 1 or 0 to enable it, not sure which, but should default be on
 
     TRISA4 = 0; // set A4 to be an output for battery output voltage
+    ANSELA4 = 1; //enable analog reading
 
     // VSENSE
     TRISC2 = 1; //set BATT_VSENSE to be output
