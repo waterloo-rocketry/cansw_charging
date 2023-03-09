@@ -62,11 +62,16 @@ int main(void) {
             
             // We're alive, let's tell the world!
 
+            //figure out how to calculate the current scaling voltage (?)
+            // add CURR_5V
+
+            // add CURR_13V
+
             // Battery charing current
             can_msg_t batt_cur_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)), //not sure if any operations are needed on this
                                     &batt_cur_msg);
             txb_enqueue(&batt_cur_msg);
 

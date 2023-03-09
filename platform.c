@@ -24,6 +24,16 @@ void pin_init(void) {
     ANSELC7 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATC7 = !LED_ON;
 
+    // Rocket power
+    TRISA2 = 1; // set EN_5V to be an input
+    LATA2 = 1; //not sure if its 1 or 0 to enable, but should be default on
+
+    TRISA1 = 0; // set CURR_5V to be output
+    ANSELA1 = 1; // enable analog reading
+
+    TRISA0 = 0; //set CURR_13V to be output
+    ANSELA0 = 1; // enable analog reading
+
     // Battery charger
     TRISA5 = 1; // set A5 as an input to toggle battery charging
     LATA5 = 1; //either 1 or 0 to enable it, not sure which, but should default be on
