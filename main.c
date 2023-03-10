@@ -61,32 +61,41 @@ int main(void) {
             heartbeat = !heartbeat;
             
             // We're alive, let's tell the world!
+            // Current draws
+            can_msg_t power_13V_curr_msg;
+            build_analog_data_msg(millis(),
+                                    SENSOR_13V_CURR, //these don't exist, but I think we need to create something
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR13_DRAW_FACTOR),
+                                    &power_13V_curr_msg);
+            txb_enqueue(&power_13V_curr_msg);
 
-            //figure out how to calculate the current scaling voltage (?)
-            // add CURR_5V
-
-            // add CURR_13V
+            can_msg_t power_5V_curr_msg;
+            build_analog_data_msg(millis(),
+                                    SENSOR_5V_CURR, //these don't exist, but I think we need to create something
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)),
+                                    &power_5V_curr_msg);
+            txb_enqueue(&power_5V_curr_msg);
 
             // Battery charing current
             can_msg_t batt_cur_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)), //not sure if any operations are needed on this
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/BATT_CURR_FACTOR),
                                     &batt_cur_msg);
             txb_enqueue(&batt_cur_msg);
 
-            // Voltage health messages
+            // Voltage health
             can_msg_t batt_volt_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR, //not sure if this is correct enum, is there BATT_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*RESISTANCE_FACTOR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*RESISTANCE_DIVIDER_FACTOR),
                                     &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
 
             can_msg_t bus_volt_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BUS_CURR, //not sure if this is correct enum, is there BUS_VSENSE?
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_FACTOR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_DIVIDER_FACTOR),
                                     &bus_volt_msg);
             txb_enqueue(&bus_volt_msg);
         }
@@ -106,11 +115,11 @@ static void can_msg_handler(const can_msg_t *msg) {
     switch (msg_type) {
         case MSG_ACTUATOR_CMD:
             int act_state = get_req_actuator_state(msg)
-            // jack said these actuator states might change so yeah
+            // jack said these actuator state constants might be renamed
             if (act_state==ACTUATOR_OPEN) {
-                // turn on EN_5V
+                LINE_5V_SET(true);
             } else if (act_state==ACTUATOR_CLOSED) {
-                // turn off EN_5V
+                LINE_5V_SET(false);
             }
             break;
 

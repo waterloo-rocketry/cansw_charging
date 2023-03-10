@@ -3,6 +3,8 @@
 
 // whether the leds turn on when the pin is set to high or low
 #define LED_ON 0
+#define LINE_5V_ON 1 //not sure if these are correct values => powers rest of rocket, should be default on?
+#define BATT_ON 1 //not sure if these are correct values
 
 /*
     // LEDs
@@ -25,20 +27,20 @@ void pin_init(void) {
     LATC7 = !LED_ON;
 
     // Rocket power
-    TRISA2 = 1; // set EN_5V to be an input
-    LATA2 = 1; //not sure if its 1 or 0 to enable, but should be default on
+    TRISA2 = 1; // allow 5V current line to be toggleable (input)
+    LATA2 = LINE_5V_ON;
 
-    TRISA1 = 0; // set CURR_5V to be output
+    TRISA1 = 0; // set 5V current draw to be output
     ANSELA1 = 1; // enable analog reading
 
-    TRISA0 = 0; //set CURR_13V to be output
+    TRISA0 = 0; //set 13V current draw to be output
     ANSELA0 = 1; // enable analog reading
 
     // Battery charger
-    TRISA5 = 1; // set A5 as an input to toggle battery charging
-    LATA5 = 1; //either 1 or 0 to enable it, not sure which, but should default be on
+    TRISA5 = 1; // allow battery charging to be toggleable (input)
+    LATA5 = BATT_ON;
 
-    TRISA4 = 0; // set A4 to be an output for battery output voltage
+    TRISA4 = 0; // set battery charging current to be output
     ANSELA4 = 1; //enable analog reading
 
     // VSENSE
@@ -57,4 +59,7 @@ void BLUE_LED_SET(bool value) {
 }
 void WHITE_LED_SET(bool value) {
     LATC7 = !value ^ LED_ON;
+}
+void LINE_5V_SET(bool value) {
+    LATA2 = !value ^ LINE_5V_ON;
 }
