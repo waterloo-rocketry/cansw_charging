@@ -3,25 +3,63 @@
 
 // whether the leds turn on when the pin is set to high or low
 #define LED_ON 0
+#define LINE_5V_ON 1 //not sure if these are correct values => powers rest of rocket, should be default on?
+#define BATT_ON 1 //not sure if these are correct values
 
-void gpio_init(void) {
-    // set as outputs
-    TRISB0 = 0;
-    TRISB1 = 0;
-    TRISB2 = 0;
-    
-    // turn LEDs off
-    LATB0 = !LED_ON;
-    LATB1 = !LED_ON;
-    LATB2 = !LED_ON;
+/*
+    // LEDs
+    TRISC5 = 0; // set C5 as an output for the white LED
+    ANSELC5 = 0; // Enable digital input buffer (Useful for reading the LED state)
+    LATC5 = 1; // turn the white LED off
+*/
+void pin_init(void) {
+    // LEDS
+    TRISC5 = 0; // set C5 as an output for red LED
+    ANSELC5 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATC5 = !LED_ON;
+
+    TRISC6 = 0; // set C6 as an output for blue LED
+    ANSELC6 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATC6 = !LED_ON;
+
+    TRISC7 = 0; // set C7 as an output for white LED
+    ANSELC7 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATC7 = !LED_ON;
+
+    // Rocket power
+    TRISA2 = 1; // allow 5V current line to be toggleable (input)
+    LATA2 = LINE_5V_ON;
+
+    TRISA1 = 0; // set 5V current draw to be output
+    ANSELA1 = 1; // enable analog reading
+
+    TRISA0 = 0; //set 13V current draw to be output
+    ANSELA0 = 1; // enable analog reading
+
+    // Battery charger
+    TRISA5 = 1; // allow battery charging to be toggleable (input)
+    LATA5 = BATT_ON;
+
+    TRISA4 = 0; // set battery charging current to be output
+    ANSELA4 = 1; //enable analog reading
+
+    // VSENSE
+    TRISC2 = 1; //set BATT_VSENSE to be output
+    ANSELC2 = 1; //enable analog reading
+
+    TRISC3 = 1; //set VSW_VSENSE to be output
+    ANSELC3 = 1; //enable analog reading
 }
 
 void RED_LED_SET(bool value) {
-    LATB0 = !value ^ LED_ON;
+    LATC5 = !value ^ LED_ON;
 }
 void BLUE_LED_SET(bool value) {
-    LATB1 = !value ^ LED_ON;
+    LATC6 = !value ^ LED_ON;
 }
 void WHITE_LED_SET(bool value) {
-    LATB2 = !value ^ LED_ON;
+    LATC7 = !value ^ LED_ON;
+}
+void LINE_5V_SET(bool value) {
+    LATA2 = !value ^ LINE_5V_ON;
 }
