@@ -14,5 +14,6 @@ void RED_LED_SET(bool value);
 void BLUE_LED_SET(bool value);
 void WHITE_LED_SET(bool value);
 
+void LINE_5V_SET(bool value);
 #endif	/* BOARD_H */
 

@@ -1,6 +1,14 @@
 #include <xc.h>
 #include "canlib.h"
+#include "canlib/can.h"
+#include "canlib/can_common.h"
+#include "canlib/pic18f26k83/pic18f26k83_can.h"
+#include "canlib/message_types.h"
+#include "canlib/util/timing_util.h"
+#include "canlib/util/can_tx_buffer.h"
+#include "canlib/pic18f26k83/pic18f26k83_timer.h"
 
+// #include "mcc_generated_files/mcc.h"
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
 
@@ -64,14 +72,16 @@ int main(void) {
             // Current draws
             can_msg_t power_13V_curr_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_13V_CURR, //these don't exist, but I think we need to create something
+                    SENSOR_BUS_CURR,
+//                                    SENSOR_13V_CURR, //these don't exist, but I think we need to create something
                                     (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR13_DRAW_FACTOR),
                                     &power_13V_curr_msg);
             txb_enqueue(&power_13V_curr_msg);
 
             can_msg_t power_5V_curr_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_5V_CURR, //these don't exist, but I think we need to create something
+                    SENSOR_BUS_CURR,
+//                                    SENSOR_5V_CURR, //these don't exist, but I think we need to create something
                                     (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)),
                                     &power_5V_curr_msg);
             txb_enqueue(&power_5V_curr_msg);
@@ -112,9 +122,10 @@ static void can_msg_handler(const can_msg_t *msg) {
         return;
     }
 
+    int act_state;
     switch (msg_type) {
         case MSG_ACTUATOR_CMD:
-            int act_state = get_req_actuator_state(msg)
+            act_state = get_req_actuator_state(msg);
             // jack said these actuator state constants might be renamed
             if (act_state==ACTUATOR_OPEN) {
                 LINE_5V_SET(true);
