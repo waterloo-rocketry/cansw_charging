@@ -4,12 +4,6 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <logicalFolder name="mcc_generated_files"
-                     displayName="mcc_generated_files"
-                     projectFiles="true">
-        <itemPath>mcc_generated_files/adcc.h</itemPath>
-        <itemPath>mcc_generated_files/fvr.h</itemPath>
-      </logicalFolder>
       <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
         <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
           <itemPath>canlib/pic18f26k83/pic18f26k83_timer.h</itemPath>
@@ -26,6 +20,12 @@
         <itemPath>canlib/can.h</itemPath>
         <itemPath>canlib/canlib.h</itemPath>
       </logicalFolder>
+      <logicalFolder name="mcc_generated_files"
+                     displayName="mcc_generated_files"
+                     projectFiles="true">
+        <itemPath>mcc_generated_files/adcc.h</itemPath>
+        <itemPath>mcc_generated_files/fvr.h</itemPath>
+      </logicalFolder>
       <itemPath>device_config.h</itemPath>
       <itemPath>platform.h</itemPath>
     </logicalFolder>
@@ -36,12 +36,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <logicalFolder name="mcc_generated_files"
-                     displayName="mcc_generated_files"
-                     projectFiles="true">
-        <itemPath>mcc_generated_files/fvr.c</itemPath>
-        <itemPath>mcc_generated_files/adcc.c</itemPath>
-      </logicalFolder>
       <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
         <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
           <itemPath>canlib/pic18f26k83/pic18f26k83_can.c</itemPath>
@@ -54,6 +48,12 @@
           <itemPath>canlib/util/safe_ring_buffer.c</itemPath>
         </logicalFolder>
         <itemPath>canlib/can_common.c</itemPath>
+      </logicalFolder>
+      <logicalFolder name="mcc_generated_files"
+                     displayName="mcc_generated_files"
+                     projectFiles="true">
+        <itemPath>mcc_generated_files/fvr.c</itemPath>
+        <itemPath>mcc_generated_files/adcc.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>device_config.c</itemPath>
@@ -212,7 +212,7 @@
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-ffff"/>
-        <property key="poweroptions.powerenable" value="false"/>
+        <property key="poweroptions.powerenable" value="true"/>
         <property key="programmertogo.imagename" value=""/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
@@ -230,7 +230,7 @@
         <property key="programoptions.testmodeentrymethod" value="VDDFirst"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="5.0"/>
+        <property key="voltagevalue" value="4.75"/>
       </PICkit3PlatformTool>
       <Tool>
         <property key="AutoSelectMemRanges" value="auto"/>
@@ -256,7 +256,7 @@
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-ffff"/>
-        <property key="poweroptions.powerenable" value="false"/>
+        <property key="poweroptions.powerenable" value="true"/>
         <property key="programmertogo.imagename" value=""/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
@@ -274,7 +274,7 @@
         <property key="programoptions.testmodeentrymethod" value="VDDFirst"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="5.0"/>
+        <property key="voltagevalue" value="4.75"/>
       </Tool>
       <XC8-CO>
         <property key="coverage-enable" value=""/>

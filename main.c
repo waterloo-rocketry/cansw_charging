@@ -72,7 +72,7 @@ int main(void) {
             // Current draws
             can_msg_t power_13V_curr_msg;
             build_analog_data_msg(millis(),
-                    SENSOR_BUS_CURR,
+                    SENSOR_ARM_BATT_1,
 //                                    SENSOR_13V_CURR, //these don't exist, but I think we need to create something
                                     (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR13_DRAW_FACTOR),
                                     &power_13V_curr_msg);
@@ -80,7 +80,7 @@ int main(void) {
 
             can_msg_t power_5V_curr_msg;
             build_analog_data_msg(millis(),
-                    SENSOR_BUS_CURR,
+                    SENSOR_ARM_BATT_2,
 //                                    SENSOR_5V_CURR, //these don't exist, but I think we need to create something
                                     (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)),
                                     &power_5V_curr_msg);
@@ -97,14 +97,14 @@ int main(void) {
             // Voltage health
             can_msg_t batt_volt_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_BATT_CURR, //not sure if this is correct enum, is there BATT_VSENSE?
+                                    SENSOR_MAG_1, //not sure if this is correct enum, is there BATT_VSENSE?
                                     (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*RESISTANCE_DIVIDER_FACTOR),
                                     &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
 
             can_msg_t bus_volt_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_BUS_CURR, //not sure if this is correct enum, is there BUS_VSENSE?
+                                    SENSOR_MAG_2, //not sure if this is correct enum, is there BUS_VSENSE?
                                     (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_DIVIDER_FACTOR),
                                     &bus_volt_msg);
             txb_enqueue(&bus_volt_msg);
