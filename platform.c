@@ -27,27 +27,27 @@ void pin_init(void) {
     LATC7 = !LED_ON;
 
     // Rocket power
-    TRISA2 = 1; // allow 5V current line to be toggleable (input)
+    TRISA2 = 0; // allow 5V current line to be toggleable (output)
     LATA2 = LINE_5V_ON;
 
-    TRISA1 = 0; // set 5V current draw to be output
+    TRISA1 = 1; // set 5V current draw to be input
     ANSELA1 = 1; // enable analog reading
 
-    TRISA0 = 0; //set 13V current draw to be output
+    TRISA0 = 1; //set 13V current draw to be input
     ANSELA0 = 1; // enable analog reading
 
     // Battery charger
-    TRISA5 = 1; // allow battery charging to be toggleable (input)
+    TRISA5 = 0; // allow battery charging to be toggleable (output)
     LATA5 = BATT_ON;
 
-    TRISA4 = 0; // set battery charging current to be output
+    TRISA4 = 1; // set battery charging current to be input
     ANSELA4 = 1; //enable analog reading
 
     // VSENSE
-    TRISC2 = 1; //set BATT_VSENSE to be output
+    TRISC2 = 1; //set BATT_VSENSE to be input
     ANSELC2 = 1; //enable analog reading
 
-    TRISC3 = 1; //set VSW_VSENSE to be output
+    TRISC3 = 1; //set VSW_VSENSE to be input
     ANSELC3 = 1; //enable analog reading
 }
 
