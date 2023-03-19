@@ -72,15 +72,15 @@ int main(void) {
             // Current draws
             can_msg_t power_13V_curr_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_BATT_CURR
+                                    SENSOR_BATT_CURR,
                                     (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR13_DRAW_FACTOR),
                                     &power_13V_curr_msg);
             txb_enqueue(&power_13V_curr_msg);
 
             can_msg_t power_5V_curr_msg;
             build_analog_data_msg(millis(),
-                                    SENSOR_BUS_CURR
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)),
+                                    SENSOR_BUS_CURR,
+                                    (uint16_t)ADCC_GetSingleConversion(channel_POWER_V5),
                                     &power_5V_curr_msg);
             txb_enqueue(&power_5V_curr_msg);
 

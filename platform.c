@@ -4,7 +4,7 @@
 // whether the leds turn on when the pin is set to high or low
 #define LED_ON 0
 #define LINE_5V_ON 1 //not sure if these are correct values => powers rest of rocket, should be default on?
-#define BATT_ON 1 //not sure if these are correct values
+#define BATT_ON 0 //not sure if these are correct values
 
 /*
     // LEDs

@@ -92,7 +92,7 @@ typedef enum
     channel_POWER_V13 = 0x0,
     channel_POWER_V5  = 0x1,
     channel_BATT_CURR = 0x4,
-    channel_BATT_VOLT = 0x12,
+    channel_ROCKET_VOLT = 0x12,
     channel_CAN_VOLT  = 0x13
 } adcc_channel_t; //page 677
 
