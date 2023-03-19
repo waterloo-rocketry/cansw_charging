@@ -3,8 +3,9 @@
 
 #include <stdbool.h>
 
-#define CURR13_DRAW_FACTOR 0.5
-#define BATT_CURR_FACTOR 2
+#define CUR5_DRAW_FACTOR 1.0
+#define CUR13_DRAW_FACTOR 0.5
+#define BATT_CUR_FACTOR 2
 #define RESISTANCE_DIVIDER_FACTOR 3.2
 
 

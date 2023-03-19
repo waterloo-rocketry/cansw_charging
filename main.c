@@ -1,3 +1,4 @@
+#include <xc.h>
 #include "canlib.h"
 #include "canlib/can.h"
 #include "canlib/can_common.h"
@@ -13,8 +14,6 @@
 #include "device_config.h"
 #include "platform.h"
 
-#include <xc.h>
-
 #define MAX_LOOP_TIME_DIFF_ms 250
 
 static void can_msg_handler(const can_msg_t *msg);
@@ -23,29 +22,24 @@ static void can_msg_handler(const can_msg_t *msg);
 uint8_t tx_pool[100];
 
 int main(void) {
-    // set up pins
-    pin_init();
-    
     // initialize mcc functions
     ADCC_Initialize();
     FVR_Initialize();
 
-    // intiialize the external oscillator
-    oscillator_init();
-
-    // init our millis() function
-    timer0_init();
+    pin_init(); // init pins
+    oscillator_init(); // init the external oscillator
+    timer0_init(); // init our millis() function
 
     // Enable global interrupts
     INTCON0bits.GIE = 1;
 
     // Set up CAN TX
-    TRISC0 = 0; // set as output
+    TRISC0 = 0;
     RC0PPS = 0x33; // make C0 transmit CAN TX (page 267)
 
     // Set up CAN RX
-    TRISC1 = 1; // set as input
-    ANSELC1 = 0; // not analog
+    TRISC1 = 1;
+    ANSELC1 = 0;
     CANRXPPS = 0x11; // make CAN read from C1 (page 264-265)
 
     // set up CAN module
@@ -68,19 +62,18 @@ int main(void) {
             BLUE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
             
-            // We're alive, let's tell the world!
             // Current draws
             can_msg_t power_13V_curr_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR13_DRAW_FACTOR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CUR13_DRAW_FACTOR),
                                     &power_13V_curr_msg);
             txb_enqueue(&power_13V_curr_msg);
 
             can_msg_t power_5V_curr_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_BUS_CURR,
-                                    (uint16_t)ADCC_GetSingleConversion(channel_POWER_V5),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)*CUR5_DRAW_FACTOR),
                                     &power_5V_curr_msg);
             txb_enqueue(&power_5V_curr_msg);
 
@@ -88,7 +81,7 @@ int main(void) {
             can_msg_t batt_cur_msg;
             build_analog_data_msg(millis(),
                                     SENSOR_CHARGE_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/BATT_CURR_FACTOR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/BATT_CUR_FACTOR),
                                     &batt_cur_msg);
             txb_enqueue(&batt_cur_msg);
 
