@@ -8,7 +8,6 @@
 #define BATT_CUR_FACTOR 2
 #define RESISTANCE_DIVIDER_FACTOR 3.2
 
-
 void pin_init(void);
 
 void RED_LED_SET(bool value);

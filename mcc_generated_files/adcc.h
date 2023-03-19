@@ -86,8 +86,7 @@ typedef signed short long int int24_t;
    None
  */
 
-typedef enum
-{
+typedef enum {
     channel_POWER_V13 = 0x0,
     channel_POWER_V5  = 0x1,
     channel_BATT_CURR = 0x4,
