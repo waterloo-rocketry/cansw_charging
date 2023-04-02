@@ -63,42 +63,43 @@ int main(void) {
             heartbeat = !heartbeat;
             
             // Current draws
-            can_msg_t power_13V_curr_msg;
+            can_msg_t batt_curr_msg; // measures the car battery current (pre-respin)
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CUR13_DRAW_FACTOR),
-                                    &power_13V_curr_msg);
-            txb_enqueue(&power_13V_curr_msg);
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR_13V_SCALAR),
+                                    &batt_curr_msg);
+            txb_enqueue(&batt_curr_msg);
 
-            can_msg_t power_5V_curr_msg;
+            can_msg_t bus_curr_msg; // measures current going into CAN 5V
             build_analog_data_msg(millis(),
                                     SENSOR_BUS_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)*CUR5_DRAW_FACTOR),
-                                    &power_5V_curr_msg);
-            txb_enqueue(&power_5V_curr_msg);
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)*CURR_5V_SCALAR),
+                                    &bus_curr_msg);
+            txb_enqueue(&bus_curr_msg);
 
             // Battery charing current
-            can_msg_t batt_cur_msg;
+            can_msg_t chg_curr_msg; // measures current being charged into lipo
             build_analog_data_msg(millis(),
                                     SENSOR_CHARGE_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/BATT_CUR_FACTOR),
-                                    &batt_cur_msg);
-            txb_enqueue(&batt_cur_msg);
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/CHG_CURR_SCALAR),
+                                    &chg_curr_msg);
+            txb_enqueue(&chg_curr_msg);
 
             // Voltage health
-            can_msg_t rocket_volt_msg;
-            build_analog_data_msg(millis(),
-                                    SENSOR_ROCKET_BATT,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_ROCKET_VOLT)*RESISTANCE_DIVIDER_FACTOR),
-                                    &rocket_volt_msg);
-            txb_enqueue(&rocket_volt_msg);
-
-            can_msg_t batt_volt_msg;
+            can_msg_t chg_volt_msg; // measures voltage of lipo
             build_analog_data_msg(millis(),
                                     SENSOR_CHARGE_VOLT,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_DIVIDER_FACTOR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_DIVIDER_SCALAR),
+                                    &chg_volt_msg);
+            txb_enqueue(&chg_volt_msg);
+
+            can_msg_t batt_volt_msg; // measures the car battery voltage (pre-respin)
+            build_analog_data_msg(millis(),
+                                    SENSOR_BATT_VOLT,
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_ROCKET_VOLT)*RESISTANCE_DIVIDER_SCALAR),
                                     &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
+
         }
         //send any queued CAN messages
         txb_heartbeat();
@@ -118,9 +119,9 @@ static void can_msg_handler(const can_msg_t *msg) {
         case MSG_ACTUATOR_CMD:
             act_state = get_req_actuator_state(msg);
             if (act_state==ACTUATOR_OPEN) {
-                LINE_5V_SET(true);
+                CAN_5V_SET(true);
             } else if (act_state==ACTUATOR_CLOSED) {
-                LINE_5V_SET(false);
+                CAN_5V_SET(false);
             }
             break;
 

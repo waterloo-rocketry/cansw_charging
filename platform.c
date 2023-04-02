@@ -1,9 +1,10 @@
 #include <xc.h>
 #include "platform.h"
 
+// LEDs and switches
 #define LED_ON 0
-#define LINE_5V_ON 1
-#define BATT_ON 0
+#define CAN_5V_ON 1
+#define CHG_BATT_ON 0
 
 void pin_init(void) {
     // LEDS
@@ -21,31 +22,27 @@ void pin_init(void) {
 
     // Rocket power lines
     TRISA2 = 0; // allow 5V current line to be toggle-able
-    LATA2 = LINE_5V_ON;
+    LATA2 = CAN_5V_ON;
 
-    TRISA1 = 1; // set 5V current draw to be input
+    TRISA1 = 1; // set 5V current draw (can 5V bus) to be input
     ANSELA1 = 1; // enable analog reading
 
-    TRISA0 = 1; //set 13V current draw to be input
+    TRISA0 = 1; //set 13V current draw (battery) to be input
     ANSELA0 = 1; // enable analog reading
 
     // Battery charger
     TRISA5 = 0; // allow battery charging to be toggle-able
-    LATA5 = BATT_ON;
+    LATA5 = CHG_BATT_ON;
 
     TRISA4 = 1; // set battery charging current to be input
     ANSELA4 = 1; //enable analog reading
 
     // Voltage health
-    TRISC2 = 1; //set rocket voltage to be input
+    TRISC2 = 1; //set battery voltage to be input
     ANSELC2 = 1; //enable analog reading
 
-    TRISC3 = 1; //set 13V battery voltage to be input
+    TRISC3 = 1; //set rocket voltage to be input
     ANSELC3 = 1; //enable analog reading
-}
-
-void LINE_5V_SET(bool value) {
-    LATA2 = !value ^ LINE_5V_ON;
 }
 
 void RED_LED_SET(bool value) {
@@ -58,4 +55,8 @@ void BLUE_LED_SET(bool value) {
 
 void WHITE_LED_SET(bool value) {
     LATC7 = !value ^ LED_ON;
+}
+
+void CAN_5V_SET(bool value) {
+    LATA2 = !value ^ CAN_5V_ON;
 }
