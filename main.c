@@ -14,8 +14,6 @@
 #include "device_config.h"
 #include "platform.h"
 
-#define MAX_LOOP_TIME_DIFF_ms 250
-
 static void can_msg_handler(const can_msg_t *msg);
 
 //memory pool for the CAN tx buffer
@@ -51,6 +49,7 @@ int main(void) {
 
     // loop timer
     uint32_t last_millis = millis();
+    uint32_t sensor_last_millis = millis();
     
     bool heartbeat = false;
     while (1) {
@@ -64,9 +63,10 @@ int main(void) {
             
             // Current draws
             can_msg_t batt_curr_msg; // measures the car battery current (pre-respin)
+            // implements cansw_arming's rolling average to act as a low-pass voltage filter
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V13)*CURR_13V_SCALAR),
+                                    get_batt_curr_low_pass(),
                                     &batt_curr_msg);
             txb_enqueue(&batt_curr_msg);
 
@@ -103,6 +103,12 @@ int main(void) {
         }
         //send any queued CAN messages
         txb_heartbeat();
+
+        // high speed sensor checking
+        if (millis() - sensor_last_millis > MAX_SENSOR_LOOP_TIME_DIFF_ms) {
+            sensor_last_millis = millis();
+            update_batt_curr_low_pass();
+        }
     }
 }
 

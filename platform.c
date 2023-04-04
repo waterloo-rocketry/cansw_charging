@@ -60,3 +60,24 @@ void WHITE_LED_SET(bool value) {
 void CAN_5V_SET(bool value) {
     LATA2 = !value ^ CAN_5V_ON;
 }
+
+// the following code was yoinked from cansw_arming
+
+// zach derived the equation alpha = (Fs*T/5)/ 1 + (Fs*T/5)
+// where Fs = sampling frequency and T = response time
+// response time is equivalent to 5*tau or 5/2pi*Fc, where Fc is cutoff frequency
+
+#define SAMPLE_FREQ (1000.0 / MAX_SENSOR_LOOP_TIME_DIFF_ms)
+#define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
+#define LOW_PASS_RESPONSE_TIME 10  //seconds
+double alpha_low = LOW_PASS_ALPHA(LOW_PASS_RESPONSE_TIME);
+double low_pass_curr = 0;
+void update_batt_curr_low_pass(void){
+    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) * CURR_13V_SCALAR;
+
+    low_pass_curr = alpha_low*low_pass_curr + (1.0 - alpha_low)*new_curr_reading;
+}
+
+double get_batt_curr_low_pass(void){
+    return low_pass_curr;
+}
