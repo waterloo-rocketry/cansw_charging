@@ -51,7 +51,7 @@ int main(void) {
     uint32_t last_millis = millis();
     uint32_t sensor_last_millis = millis();
     
-    bool heartbeat = false;
+    bool heartbeat = false; //TODO: I think this needs to start true
     while (1) {
         if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
             // update our loop counter

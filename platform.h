@@ -11,8 +11,8 @@
 // Voltage monitoring
 #define RESISTANCE_DIVIDER_SCALAR 3.2
 // Current monioring
-#define CURR_5V_SCALAR 1.0
-#define CURR_13V_SCALAR 0.5
+#define CURR_5V_SCALAR 2.0
+#define CURR_13V_SCALAR 1.0
 #define CHG_CURR_SCALAR 2.0
 
 void pin_init(void);
@@ -23,7 +23,8 @@ void WHITE_LED_SET(bool value);
 
 void CAN_5V_SET(bool value);
 
+void update_batt_curr_low_pass(void);
 //returns the value from the lower cut off frequency filter
-double get_batt_curr_low_low_pass(void);
+double get_batt_curr_low_pass(void);
 #endif	/* BOARD_H */
 

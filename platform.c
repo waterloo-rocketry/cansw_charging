@@ -1,8 +1,9 @@
 #include <xc.h>
 #include "platform.h"
+#include "mcc_generated_files/adcc.h"
 
 // LEDs and switches
-#define LED_ON 0
+#define LED_ON 0 // TODO: is this correct??
 #define CAN_5V_ON 1
 #define CHG_BATT_ON 0
 
@@ -69,7 +70,7 @@ void CAN_5V_SET(bool value) {
 
 #define SAMPLE_FREQ (1000.0 / MAX_SENSOR_LOOP_TIME_DIFF_ms)
 #define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
-#define LOW_PASS_RESPONSE_TIME 10  //seconds
+#define LOW_PASS_RESPONSE_TIME 10 // seconds
 double alpha_low = LOW_PASS_ALPHA(LOW_PASS_RESPONSE_TIME);
 double low_pass_curr = 0;
 void update_batt_curr_low_pass(void){
