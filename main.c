@@ -1,12 +1,12 @@
 #include <xc.h>
-#include "canlib.h"
+#include "canlib.h" // TODO: I think this needs to be canlib/canlib.h, which means the _can and _timer can go
 #include "canlib/can.h"
 #include "canlib/can_common.h"
 #include "canlib/pic18f26k83/pic18f26k83_can.h"
+#include "canlib/pic18f26k83/pic18f26k83_timer.h"
 #include "canlib/message_types.h"
 #include "canlib/util/timing_util.h"
 #include "canlib/util/can_tx_buffer.h"
-#include "canlib/pic18f26k83/pic18f26k83_timer.h"
 
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
@@ -15,6 +15,7 @@
 #include "platform.h"
 
 static void can_msg_handler(const can_msg_t *msg);
+static void send_status_ok(void);
 
 //memory pool for the CAN tx buffer
 uint8_t tx_pool[100];
@@ -51,7 +52,7 @@ int main(void) {
     uint32_t last_millis = millis();
     uint32_t sensor_last_millis = millis();
     
-    bool heartbeat = false; //TODO: I think this needs to start true
+    bool heartbeat = false;
     while (1) {
         if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
             // update our loop counter
@@ -60,46 +61,54 @@ int main(void) {
             // visual heartbeat indicator
             BLUE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
-            
+
+            // check for general board status
+            bool status_ok = true;
+            status_ok &= check_battery_voltage_error();
+            status_ok &= check_battery_current_error();
+            status_ok &= check_bus_current_error();
+
+            // if there was an issue, a message would already have been sent out
+            if (status_ok) { send_status_ok(); }
+
             // Current draws
-            can_msg_t batt_curr_msg; // measures the car battery current (pre-respin)
+            can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides groundside or lipo battery)
             // implements cansw_arming's rolling average to act as a low-pass voltage filter
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_CURR,
                                     get_batt_curr_low_pass(),
-                                    &batt_curr_msg);
-            txb_enqueue(&batt_curr_msg);
+                                    &vcc_curr_msg);
+            txb_enqueue(&vcc_curr_msg);
 
             can_msg_t bus_curr_msg; // measures current going into CAN 5V
             build_analog_data_msg(millis(),
                                     SENSOR_BUS_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)*CURR_5V_SCALAR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5)/CURR_5V_RESISTOR),
                                     &bus_curr_msg);
             txb_enqueue(&bus_curr_msg);
 
             // Battery charing current
-            can_msg_t chg_curr_msg; // measures current being charged into lipo
+            can_msg_t chg_curr_msg; // measures charing current going into lipo
             build_analog_data_msg(millis(),
                                     SENSOR_CHARGE_CURR,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_CURR)/CHG_CURR_SCALAR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR)/CHG_CURR_RESISTOR),
                                     &chg_curr_msg);
             txb_enqueue(&chg_curr_msg);
 
             // Voltage health
-            can_msg_t chg_volt_msg; // measures voltage of lipo
-            build_analog_data_msg(millis(),
-                                    SENSOR_CHARGE_VOLT,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_CAN_VOLT)*RESISTANCE_DIVIDER_SCALAR),
-                                    &chg_volt_msg);
-            txb_enqueue(&chg_volt_msg);
-
-            can_msg_t batt_volt_msg; // measures the car battery voltage (pre-respin)
+            can_msg_t batt_volt_msg; // measures the lipo battery voltage
             build_analog_data_msg(millis(),
                                     SENSOR_BATT_VOLT,
-                                    (uint16_t)(ADCC_GetSingleConversion(channel_ROCKET_VOLT)*RESISTANCE_DIVIDER_SCALAR),
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*BATT_RESISTANCE_DIVIDER),
                                     &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
 
+            can_msg_t ground_volt_msg; // measures the groundside battery voltage
+            build_analog_data_msg(millis(),
+                                    SENSOR_GROUND_VOLT,
+                                    (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT)*GROUND_RESISTANCE_DIVIDER),
+                                    &ground_volt_msg);
+            txb_enqueue(&ground_volt_msg);
         }
         //send any queued CAN messages
         txb_heartbeat();
@@ -120,14 +129,26 @@ static void can_msg_handler(const can_msg_t *msg) {
         return;
     }
 
+    int act_id;
     int act_state;
     switch (msg_type) {
         case MSG_ACTUATOR_CMD:
+            act_id = get_actuator_id(msg);
             act_state = get_req_actuator_state(msg);
-            if (act_state==ACTUATOR_OPEN) {
-                CAN_5V_SET(true);
-            } else if (act_state==ACTUATOR_CLOSED) {
-                CAN_5V_SET(false);
+            if(act_id == ACTUATOR_CANBUS) {
+                if (act_state == ACTUATOR_ON) {
+                    // RED_LED_SET(true);
+                    CAN_5V_SET(true);
+                } else if (act_state == ACTUATOR_OFF) {
+                    // RED_LED_SET(false);
+                    CAN_5V_SET(false);
+                }
+            } else if(act_id == ACTUATOR_CHARGE) {
+                if (act_state==ACTUATOR_ON) {
+                    CHARGE_CURR_SET(true);
+                } else if (act_state == ACTUATOR_OFF) {
+                    CHARGE_CURR_SET(false);
+                }
             }
             break;
 
@@ -135,6 +156,15 @@ static void can_msg_handler(const can_msg_t *msg) {
         default:
             break;
     }
+}
+
+// Send a CAN message with nominal status
+static void send_status_ok(void) {
+    can_msg_t board_stat_msg;
+    build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
+
+    // send it off at low priority
+    txb_enqueue(&board_stat_msg);
 }
 
 static void __interrupt() interrupt_handler(void) {

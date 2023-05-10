@@ -62,6 +62,10 @@ void CAN_5V_SET(bool value) {
     LATA2 = !value ^ CAN_5V_ON;
 }
 
+void CHARGE_CURR_SET(bool value) {
+    LATA5 = !value ^ CHG_BATT_ON;
+}
+
 // the following code was yoinked from cansw_arming
 
 // zach derived the equation alpha = (Fs*T/5)/ 1 + (Fs*T/5)
@@ -74,11 +78,11 @@ void CAN_5V_SET(bool value) {
 double alpha_low = LOW_PASS_ALPHA(LOW_PASS_RESPONSE_TIME);
 double low_pass_curr = 0;
 void update_batt_curr_low_pass(void){
-    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) * CURR_13V_SCALAR;
+    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
 
     low_pass_curr = alpha_low*low_pass_curr + (1.0 - alpha_low)*new_curr_reading;
 }
 
-double get_batt_curr_low_pass(void){
-    return low_pass_curr;
+uint16_t get_batt_curr_low_pass(void){
+    return (uint16_t)low_pass_curr;
 }
