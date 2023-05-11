@@ -19,7 +19,7 @@
 
 
 bool check_battery_voltage_error(void){
-    uint16_t batt_curr = get_batt_curr_low_pass(); // weird double casting to uint16_t
+    uint16_t batt_curr = get_batt_curr_low_pass();
 
     // get the un-scaled battery voltage (voltage divider)
     uint16_t batt_voltage_mV = batt_curr * CURR_13V_RESISTOR;
@@ -31,7 +31,7 @@ bool check_battery_voltage_error(void){
         uint8_t batt_data[2] = {0};
         batt_data[0] = (batt_voltage_mV >> 8) & 0xff;
         batt_data[1] = (batt_voltage_mV >> 0) & 0xff;
-        enum BOARD_STATUS error_code = batt_voltage_mV < ACTUATOR_BATT_UNDERVOLTAGE_THRESHOLD_mV
+        enum BOARD_STATUS error_code = batt_voltage_mV < BATT_UNDERVOLTAGE_THRESHOLD_mV
                 ? E_BATT_UNDER_VOLTAGE
                 : E_BATT_OVER_VOLTAGE;
 

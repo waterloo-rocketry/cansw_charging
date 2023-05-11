@@ -13,6 +13,7 @@
 
 #include "device_config.h"
 #include "platform.h"
+#include "error_checks.h"
 
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
@@ -137,11 +138,9 @@ static void can_msg_handler(const can_msg_t *msg) {
             act_state = get_req_actuator_state(msg);
             if(act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
-                    // RED_LED_SET(true);
-                    CAN_5V_SET(true);
+                   CAN_5V_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
-                    // RED_LED_SET(false);
-                    CAN_5V_SET(false);
+                   CAN_5V_SET(false);
                 }
             } else if(act_id == ACTUATOR_CHARGE) {
                 if (act_state==ACTUATOR_ON) {
