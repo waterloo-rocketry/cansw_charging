@@ -11,10 +11,10 @@
 #define BATT_OVERVOLTAGE_THRESHOLD_mV 12600
 
 // at this current, a warning will be sent out over CAN
-#define BATT_OVERCURRENT_THRESHOLD_mA 600 //TODO: CHECK VALUE WITH JACK
+#define BATT_OVERCURRENT_THRESHOLD_mA 2000
 
 // From bus line. At this current, a warning will be sent out over CAN
-#define BUS_OVERCURRENT_THRESHOLD_mA 300
+#define BUS_OVERCURRENT_THRESHOLD_mA 500
 
 // General board status checkers
 bool check_battery_voltage_error(void);

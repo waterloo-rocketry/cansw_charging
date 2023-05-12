@@ -19,10 +19,7 @@
 
 
 bool check_battery_voltage_error(void){
-    uint16_t batt_curr = get_batt_curr_low_pass();
-
-    // get the un-scaled battery voltage (voltage divider)
-    uint16_t batt_voltage_mV = batt_curr * CURR_13V_RESISTOR;
+    uint16_t batt_voltage_mV = (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT)*BATT_RESISTANCE_DIVIDER);
 
     if (batt_voltage_mV < BATT_UNDERVOLTAGE_THRESHOLD_mV
             || batt_voltage_mV > BATT_OVERVOLTAGE_THRESHOLD_mV) {

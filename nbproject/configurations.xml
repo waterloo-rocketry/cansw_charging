@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="65">
   <logicalFolder name="root" displayName="root" projectFiles="true">
+    <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
+    </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
@@ -67,6 +69,9 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>canlib</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="default" type="2">
@@ -77,8 +82,8 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>2.41</languageToolchainVersion>
-        <platform>4</platform>
+        <languageToolchainVersion>2.31</languageToolchainVersion>
+        <platform>2</platform>
       </toolsSet>
       <packs>
         <pack name="PIC18F-K_DFP" vendor="Microchip" version="1.5.114"/>
@@ -116,7 +121,7 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="BOARD_UNIQUE_ID=0"/>
+        <property key="define-macros" value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING"/>
         <property key="disable-optimizations" value="true"/>
         <property key="extra-include-directories" value="canlib;mcc_generated_files"/>
         <property key="favor-optimization-for" value="-speed,+space"/>
@@ -200,7 +205,6 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
@@ -286,15 +290,12 @@
       </XC8-CO>
       <XC8-config-global>
         <property key="advanced-elf" value="true"/>
-        <property key="constdata-progmem" value="true"/>
         <property key="gcc-opt-driver-new" value="true"/>
         <property key="gcc-opt-std" value="-std=c99"/>
         <property key="gcc-output-file-format" value="dwarf-3"/>
-        <property key="mapped-progmem" value="false"/>
         <property key="omit-pack-options" value="false"/>
         <property key="omit-pack-options-new" value="3"/>
         <property key="output-file-format" value="-mcof,+elf"/>
-        <property key="smart-io-format" value=""/>
         <property key="stack-size-high" value="auto"/>
         <property key="stack-size-low" value="auto"/>
         <property key="stack-size-main" value="auto"/>

@@ -3,7 +3,7 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>cansw_charging</name>
+            <name>cansw_template</name>
             <creation-uuid>a594f85b-6438-49f9-ad57-e3d1d5e4a4c5</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
@@ -12,7 +12,9 @@
             <asminc-extensions/>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
             <make-dep-projects/>
-            <sourceRootList/>
+            <sourceRootList>
+                <sourceRootElem>canlib</sourceRootElem>
+            </sourceRootList>
             <confList>
                 <confElem>
                     <name>default</name>
