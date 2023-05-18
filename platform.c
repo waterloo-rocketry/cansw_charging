@@ -3,7 +3,7 @@
 #include "mcc_generated_files/adcc.h"
 
 // LEDs and switches
-#define LED_ON 0 // TODO: is this correct??
+#define LED_ON 0
 #define CAN_5V_ON 1
 #define CHG_BATT_ON 0
 

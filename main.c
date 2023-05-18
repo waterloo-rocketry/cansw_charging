@@ -1,5 +1,5 @@
 #include <xc.h>
-#include "canlib.h" // TODO: I think this needs to be canlib/canlib.h, which means the _can and _timer can go
+#include "canlib.h"
 #include "canlib/can.h"
 #include "canlib/can_common.h"
 #include "canlib/pic18f26k83/pic18f26k83_can.h"
