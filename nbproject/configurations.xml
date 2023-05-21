@@ -2,33 +2,35 @@
 <configurationDescriptor version="65">
   <logicalFolder name="root" displayName="root" projectFiles="true">
     <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
-      <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
-        <itemPath>canlib/pic18f26k83/pic18f26k83_can.c</itemPath>
-        <itemPath>canlib/pic18f26k83/pic18f26k83_timer.h</itemPath>
-        <itemPath>canlib/pic18f26k83/pic18f26k83_timer.c</itemPath>
-        <itemPath>canlib/pic18f26k83/pic18f26k83_can.h</itemPath>
-      </logicalFolder>
-      <logicalFolder name="util" displayName="util" projectFiles="true">
-        <itemPath>canlib/util/can_tx_buffer.c</itemPath>
-        <itemPath>canlib/util/can_rcv_buffer.c</itemPath>
-        <itemPath>canlib/util/timing_util.c</itemPath>
-        <itemPath>canlib/util/timing_util.h</itemPath>
-        <itemPath>canlib/util/can_tx_buffer.h</itemPath>
-        <itemPath>canlib/util/safe_ring_buffer.c</itemPath>
-        <itemPath>canlib/util/can_rcv_buffer.h</itemPath>
-        <itemPath>canlib/util/safe_ring_buffer.h</itemPath>
-      </logicalFolder>
-      <itemPath>canlib/message_types.h</itemPath>
-      <itemPath>canlib/can_common.h</itemPath>
-      <itemPath>canlib/can.h</itemPath>
-      <itemPath>canlib/can_common.c</itemPath>
-      <itemPath>canlib/canlib.h</itemPath>
     </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
+        <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
+          <itemPath>canlib/pic18f26k83/pic18f26k83_timer.h</itemPath>
+          <itemPath>canlib/pic18f26k83/pic18f26k83_can.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="util" displayName="util" projectFiles="true">
+          <itemPath>canlib/util/timing_util.h</itemPath>
+          <itemPath>canlib/util/can_tx_buffer.h</itemPath>
+          <itemPath>canlib/util/can_rcv_buffer.h</itemPath>
+          <itemPath>canlib/util/safe_ring_buffer.h</itemPath>
+        </logicalFolder>
+        <itemPath>canlib/message_types.h</itemPath>
+        <itemPath>canlib/can_common.h</itemPath>
+        <itemPath>canlib/can.h</itemPath>
+        <itemPath>canlib/canlib.h</itemPath>
+      </logicalFolder>
+      <logicalFolder name="mcc_generated_files"
+                     displayName="mcc_generated_files"
+                     projectFiles="true">
+        <itemPath>mcc_generated_files/adcc.h</itemPath>
+        <itemPath>mcc_generated_files/fvr.h</itemPath>
+      </logicalFolder>
       <itemPath>device_config.h</itemPath>
       <itemPath>platform.h</itemPath>
+      <itemPath>error_checks.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -37,9 +39,29 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
+        <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
+          <itemPath>canlib/pic18f26k83/pic18f26k83_can.c</itemPath>
+          <itemPath>canlib/pic18f26k83/pic18f26k83_timer.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="util" displayName="util" projectFiles="true">
+          <itemPath>canlib/util/can_tx_buffer.c</itemPath>
+          <itemPath>canlib/util/can_rcv_buffer.c</itemPath>
+          <itemPath>canlib/util/timing_util.c</itemPath>
+          <itemPath>canlib/util/safe_ring_buffer.c</itemPath>
+        </logicalFolder>
+        <itemPath>canlib/can_common.c</itemPath>
+      </logicalFolder>
+      <logicalFolder name="mcc_generated_files"
+                     displayName="mcc_generated_files"
+                     projectFiles="true">
+        <itemPath>mcc_generated_files/fvr.c</itemPath>
+        <itemPath>mcc_generated_files/adcc.c</itemPath>
+      </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>device_config.c</itemPath>
       <itemPath>platform.c</itemPath>
+      <itemPath>error_checks.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -99,9 +121,9 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="BOARD_UNIQUE_ID=0"/>
+        <property key="define-macros" value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING"/>
         <property key="disable-optimizations" value="true"/>
-        <property key="extra-include-directories" value="canlib"/>
+        <property key="extra-include-directories" value="canlib;mcc_generated_files"/>
         <property key="favor-optimization-for" value="-speed,+space"/>
         <property key="garbage-collect-data" value="true"/>
         <property key="garbage-collect-functions" value="true"/>
@@ -164,7 +186,7 @@
         <property key="input-libraries" value="libm"/>
         <property key="keep-generated-startup.as" value="false"/>
         <property key="link-in-c-library" value="true"/>
-        <property key="link-in-c-library-gcc" value=""/>
+        <property key="link-in-c-library-gcc" value="-mc90lib"/>
         <property key="link-in-peripheral-library" value="false"/>
         <property key="managed-stack" value="false"/>
         <property key="opt-xc8-linker-file" value="false"/>
@@ -215,7 +237,7 @@
         <property key="programoptions.testmodeentrymethod" value="VDDFirst"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="5.0"/>
+        <property key="voltagevalue" value="4.75"/>
       </PICkit3PlatformTool>
       <Tool>
         <property key="AutoSelectMemRanges" value="auto"/>
@@ -227,6 +249,7 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
@@ -259,7 +282,7 @@
         <property key="programoptions.testmodeentrymethod" value="VDDFirst"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="5.0"/>
+        <property key="voltagevalue" value="4.75"/>
       </Tool>
       <XC8-CO>
         <property key="coverage-enable" value=""/>
