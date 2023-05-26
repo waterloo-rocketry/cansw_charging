@@ -55,12 +55,18 @@ int main(void) {
     
     bool heartbeat = false;
     while (1) {
+        CLRWDT(); // feed the watchdog, which is set for 256ms
+        
+        if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
+            oscillator_init();
+        }
+        
         if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
             // update our loop counter
             last_millis = millis();
 
             // visual heartbeat indicator
-            BLUE_LED_SET(heartbeat);
+            WHITE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
 
             // check for general board status
@@ -132,6 +138,7 @@ static void can_msg_handler(const can_msg_t *msg) {
 
     int act_id;
     int act_state;
+    int dest_id;
     switch (msg_type) {
         case MSG_ACTUATOR_CMD:
             act_id = get_actuator_id(msg);
@@ -139,15 +146,39 @@ static void can_msg_handler(const can_msg_t *msg) {
             if(act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
                    CAN_5V_SET(true);
+                   RED_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
                    CAN_5V_SET(false);
+                   RED_LED_SET(false);
                 }
             } else if(act_id == ACTUATOR_CHARGE) {
                 if (act_state==ACTUATOR_ON) {
                     CHARGE_CURR_SET(true);
+                    BLUE_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
                     CHARGE_CURR_SET(false);
+                    BLUE_LED_SET(false);
+                    
                 }
+            }
+            break;
+        
+        case MSG_LEDS_ON:
+            RED_LED_SET(true);
+            BLUE_LED_SET(true);
+            WHITE_LED_SET(true);
+            break;
+        
+        case MSG_LEDS_OFF:
+            RED_LED_SET(false);
+            BLUE_LED_SET(false);
+            WHITE_LED_SET(false);
+            break;
+            
+        case MSG_RESET_CMD:
+            dest_id = get_reset_board_id(msg);
+            if (dest_id == BOARD_UNIQUE_ID || dest_id == 0 ){
+                RESET();
             }
             break;
 

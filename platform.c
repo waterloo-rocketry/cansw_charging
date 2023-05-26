@@ -11,19 +11,19 @@ void pin_init(void) {
     // LEDS
     TRISC5 = 0; // set red LED pin as output
     ANSELC5 = 0; // enable digital input buffer (Useful for reading the LED state)
-    LATC5 = !LED_ON;
+    LATC5 = LED_ON; // start with 5V power enabled
 
     TRISC6 = 0; // set blue LED pin as output
     ANSELC6 = 0; // enable digital input buffer (Useful for reading the LED state)
-    LATC6 = !LED_ON;
+    LATC6 = !LED_ON; // start with charging disabled
 
     TRISC7 = 0; // set white LED pin as output
     ANSELC7 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATC7 = !LED_ON;
 
     // Rocket power lines
-    TRISA2 = 0; // allow 5V current line to be toggle-able
     LATA2 = CAN_5V_ON;
+    TRISA2 = 0; // allow 5V current line to be toggle-able
 
     TRISA1 = 1; // set 5V current draw (can 5V bus) to be input
     ANSELA1 = 1; // enable analog reading
@@ -32,8 +32,8 @@ void pin_init(void) {
     ANSELA0 = 1; // enable analog reading
 
     // Battery charger
+    LATA5 = !CHG_BATT_ON; // start with charging disabled
     TRISA5 = 0; // allow battery charging to be toggle-able
-    LATA5 = CHG_BATT_ON;
 
     TRISA4 = 1; // set battery charging current to be input
     ANSELA4 = 1; //enable analog reading
