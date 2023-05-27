@@ -21,6 +21,8 @@ static void send_status_ok(void);
 //memory pool for the CAN tx buffer
 uint8_t tx_pool[100];
 
+uint32_t last_message_millis = 0;
+
 int main(void) {
     // initialize mcc functions
     ADCC_Initialize();
@@ -61,9 +63,24 @@ int main(void) {
             oscillator_init();
         }
         
+        uint32_t dt = millis() - last_message_millis;
+        // prevent race condition where last_message_millis is greater than millis
+        // by checking for overflow
+        if (dt > MAX_BUS_DEAD_TIME_ms && dt < (1 << 15)) {
+            // We've got too long without seeing a valid CAN message (including one of ours)
+            RESET();
+        }
+        
         if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
             // update our loop counter
             last_millis = millis();
+            
+            can_msg_t bus_curr_msg2; // measures current going into CAN 5V
+            build_analog_data_msg(millis(),
+                                    SENSOR_BARO,
+                                    (uint16_t)(last_message_millis),
+                                    &bus_curr_msg2);
+            txb_enqueue(&bus_curr_msg2);
 
             // visual heartbeat indicator
             WHITE_LED_SET(heartbeat);
@@ -129,6 +146,7 @@ int main(void) {
 }
 
 static void can_msg_handler(const can_msg_t *msg) {
+    last_message_millis = millis();
     uint16_t msg_type = get_message_type(msg);
 
     // ignore messages that were sent from this board

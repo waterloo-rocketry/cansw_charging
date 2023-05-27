@@ -7,6 +7,8 @@
 #define MAX_LOOP_TIME_DIFF_ms 250
 // Time between "high speed" sensor checks
 #define MAX_SENSOR_LOOP_TIME_DIFF_ms 25
+// Reset if we go this long without seeing any CAN messages (including our own)
+#define MAX_BUS_DEAD_TIME_ms 1000
 
 // Voltage monitoring
 #define BATT_RESISTANCE_DIVIDER 3.2
