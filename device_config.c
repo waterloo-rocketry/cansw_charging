@@ -5,13 +5,11 @@ void oscillator_init(void) {
     // Select external oscillator with PLL of 1:1
     OSCCON1 = 0x70;
     // wait until the clock switch has happened
-    while (OSCCON3bits.ORDY == 0) {
-    }
+    while (OSCCON3bits.ORDY == 0) {}
     // if the currently active clock (CON2) isn't the selected clock (CON1)
     if (OSCCON2 != 0b01110000) {
         // try to wait for the oscillator to come back
-        for (uint16_t i = 0; i < 60000; i++) {
-        }
+        for (uint16_t i = 0; i < 60000; i++) {}
     }
 }
 

@@ -16,7 +16,7 @@
 #include "error_checks.h"
 #include "platform.h"
 
-static void can_msg_handler(const can_msg_t* msg);
+static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 
 // memory pool for the CAN tx buffer
@@ -98,13 +98,14 @@ int main(void) {
             can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides groundside or lipo
                                     // battery)
             // implements cansw_arming's rolling average to act as a low-pass voltage filter
-            build_analog_data_msg(millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(),
-                                  &vcc_curr_msg);
+            build_analog_data_msg(
+                millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
             txb_enqueue(&vcc_curr_msg);
 
             can_msg_t bus_curr_msg; // measures current going into CAN 5V
             build_analog_data_msg(
-                millis(), SENSOR_BUS_CURR,
+                millis(),
+                SENSOR_BUS_CURR,
                 (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5) / CURR_5V_RESISTOR),
                 &bus_curr_msg);
             txb_enqueue(&bus_curr_msg);
@@ -112,7 +113,8 @@ int main(void) {
             // Battery charing current
             can_msg_t chg_curr_msg; // measures charing current going into lipo
             build_analog_data_msg(
-                millis(), SENSOR_CHARGE_CURR,
+                millis(),
+                SENSOR_CHARGE_CURR,
                 (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR),
                 &chg_curr_msg);
             txb_enqueue(&chg_curr_msg);
@@ -120,13 +122,15 @@ int main(void) {
             // Voltage health
             can_msg_t batt_volt_msg; // measures the lipo battery voltage
             build_analog_data_msg(
-                millis(), SENSOR_BATT_VOLT,
+                millis(),
+                SENSOR_BATT_VOLT,
                 (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
                 &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
 
             can_msg_t ground_volt_msg; // measures the groundside battery voltage
-            build_analog_data_msg(millis(), SENSOR_GROUND_VOLT,
+            build_analog_data_msg(millis(),
+                                  SENSOR_GROUND_VOLT,
                                   (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) *
                                              GROUND_RESISTANCE_DIVIDER),
                                   &ground_volt_msg);
@@ -143,7 +147,7 @@ int main(void) {
     }
 }
 
-static void can_msg_handler(const can_msg_t* msg) {
+static void can_msg_handler(const can_msg_t *msg) {
     seen_can_message = true;
     uint16_t msg_type = get_message_type(msg);
 
