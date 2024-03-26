@@ -1,21 +1,23 @@
-#include "device_config.h"
 #include <xc.h>
 
-void oscillator_init(void)
-{
+#include "device_config.h"
+
+void oscillator_init(void) {
     // Select external oscillator with PLL of 1:1
     OSCCON1 = 0x70;
-    //wait until the clock switch has happened
-    while (OSCCON3bits.ORDY == 0)  {}
-    //if the currently active clock (CON2) isn't the selected clock (CON1)
+    // wait until the clock switch has happened
+    while (OSCCON3bits.ORDY == 0) {}
+    // if the currently active clock (CON2) isn't the selected clock (CON1)
     if (OSCCON2 != 0b01110000) {
         // try to wait for the oscillator to come back
-        for(uint16_t i = 0; i < 60000; i++) {}
+        for (uint16_t i = 0; i < 60000; i++) {}
     }
 }
 
 // These configuration bits were generating using MCC and then copy/pasted here.
 // Everything is default except for the first two lines which set up the external oscillator.
+
+// clang-format off
 
 // CONFIG1L
 #pragma config FEXTOSC = HS     // External Oscillator Selection (HS (crystal oscillator) above 8 MHz; PFM set to high power)
