@@ -16,6 +16,8 @@
 #include "error_checks.h"
 #include "platform.h"
 
+#define MOTOR_ON 1;
+
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 
@@ -24,6 +26,23 @@ uint8_t tx_pool[100];
 
 volatile bool seen_can_message = false;
 
+#ifdef (UNIQUE_BOARD_ID == BOARD_ID_CHARGING_AIRBRAKE)
+//setup airbrakes variables
+uint32_t inj_open_time = 0;
+enum FLIGHT_PHASE {
+    PRE_FLIGHT = 0,
+    BOOST,
+    COAST,
+    DESCENT,
+};
+uint8_t state = PRE_FLIGHT;
+uint8_t cmd_airbrakes_ext = 0;
+const uint16_t BOOST_LENGTH_MS = 10000; //10000ms = 10s - CHANGE THIS
+const uint16_t COAST_LENGTH_MS = 10000;
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD) 
+uint8_t cmd_payload_rpm = 0;
+#endif
 int main(void) {
     // initialize mcc functions
     ADCC_Initialize();
@@ -56,7 +75,7 @@ int main(void) {
     uint32_t last_millis = millis();
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
-
+    
     bool heartbeat = false;
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
@@ -88,13 +107,15 @@ int main(void) {
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_bus_current_error();
+#endif
 
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
             }
-
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             // Current draws
             can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
                                     // groundside or lipo battery)
@@ -111,7 +132,7 @@ int main(void) {
                 (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5) / CURR_5V_RESISTOR),
                 &bus_curr_msg);
             txb_enqueue(&bus_curr_msg);
-
+#endif
             // Battery charing current
             can_msg_t chg_curr_msg; // measures charing current going into lipo
             build_analog_data_msg(
@@ -146,6 +167,24 @@ int main(void) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
         }
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+        //change flight state
+        if (millis() - inj_open_time > BOOST_LENGTH_MS && state == BOOST)
+        {
+            state = COAST;
+            LATB3 = MOTOR_ON;
+            
+        }
+        if (millis() - inj_open_time > BOOST_LENGTH_MS + COAST_LENGTH_MS && state == COAST)
+        {
+            state = DESCENT;
+            
+            /*
+             * after some time to retract airbrakes 
+             * LATB3 = !MOTOR_ON;
+             */
+        }
+#endif
     }
 }
 
@@ -165,15 +204,7 @@ static void can_msg_handler(const can_msg_t *msg) {
         case MSG_ACTUATOR_CMD:
             act_id = get_actuator_id(msg);
             act_state = get_req_actuator_state(msg);
-            if (act_id == ACTUATOR_CANBUS) {
-                if (act_state == ACTUATOR_ON) {
-                    CAN_5V_SET(true);
-                    RED_LED_SET(true);
-                } else if (act_state == ACTUATOR_OFF) {
-                    CAN_5V_SET(false);
-                    RED_LED_SET(false);
-                }
-            } else if (act_id == ACTUATOR_CHARGE) {
+            if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     CHARGE_CURR_SET(true);
                     BLUE_LED_SET(true);
@@ -181,7 +212,26 @@ static void can_msg_handler(const can_msg_t *msg) {
                     CHARGE_CURR_SET(false);
                     BLUE_LED_SET(false);
                 }
+            } 
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            else if (act_id == ACTUATOR_CANBUS) {
+                if (act_state == ACTUATOR_ON) {
+                    CAN_5V_SET(true);
+                    RED_LED_SET(true);
+                } else if (act_state == ACTUATOR_OFF) {
+                    CAN_5V_SET(false);
+                    RED_LED_SET(false);
+                }
             }
+#endif           
+            
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+            else if (act_id == ACTUATOR_INJECTOR_VALVE && act_state == ACTUATOR_ON) {
+                //inj open -> we're launching
+                inj_open_time = millis();
+                state = BOOST;
+            }
+#endif
             break;
 
         case MSG_LEDS_ON:
@@ -202,7 +252,20 @@ static void can_msg_handler(const can_msg_t *msg) {
                 RESET();
             }
             break;
-
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)            
+        case ACT_ANALOG_CMD:
+            act_id = get_actuator_id(msg);
+            if (act_id == ACTUATOR_AIRBRAKES_SERVO && state == COAST) {
+                cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
+            }
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)            
+        case ACT_ANALOG_CMD:
+            act_id = get_actuator_id(msg);
+            if (act_id == ACTUATOR_PAYLOD_SERVO) {
+                cmd_payload_rpm = get_req_actuator_state_analog(msg);
+            }
+#endif
         // all the other ones - do nothing
         default:
             break;

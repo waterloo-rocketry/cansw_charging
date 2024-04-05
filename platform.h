@@ -25,12 +25,20 @@ void RED_LED_SET(bool value);
 void BLUE_LED_SET(bool value);
 void WHITE_LED_SET(bool value);
 
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 void CAN_5V_SET(bool value);
 void CHARGE_CURR_SET(bool value);
+#endif
 
 void update_batt_curr_low_pass(void);
 
 // returns the value from the lower cut off frequency filter
 uint16_t get_batt_curr_low_pass(void);
 
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+void actuate_airbrakes (uint8_t extension);
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+void actuate_payload (uint8_t extension);
+#endif
 #endif /* BOARD_H */
