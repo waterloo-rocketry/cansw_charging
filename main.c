@@ -36,12 +36,20 @@ enum FLIGHT_PHASE {
     DESCENT,
 };
 uint8_t state = PRE_FLIGHT;
-uint8_t cmd_airbrakes_ext = 0;
+float cmd_airbrakes_ext = 0;
 const uint16_t BOOST_LENGTH_MS = 10000; //10000ms = 10s - CHANGE THIS
 const uint16_t COAST_LENGTH_MS = 10000;
+bool debug_en = false;
+float debug_cmd_ext = 0;
+const uint16_t MOTOR_ACT_TIME_MS = 300; //300ms
+uint16_t airbrakes__act_time = 0;
+float curr_airbrakes_ext = 0;
+const uint16_t MIN_CYCLE = 500;
+const uint16_t MAX_CYCLE = 2500;
 #endif
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD) 
-uint8_t cmd_payload_rpm = 0;
+const uint_16_t MIN_CYCLE = 0;
+const uint_16_t MAX_CYCLE = 1000; //idk lmao
 #endif
 int main(void) {
     // initialize mcc functions
@@ -179,11 +187,22 @@ int main(void) {
         {
             state = DESCENT;
             
-            /*
-             * after some time to retract airbrakes 
-             * LATB3 = !MOTOR_ON;
-             */
+            
+            //actuate_airbrakes(MIN_PWM);
+            airbrakes_act_time = millis();
+            
+            
         }
+        if (millis() - MOTOR_ACT_TIME_MS > airbrakes_act_time && (state == PRE_LAUNCH || state == DESCENT)
+        {
+            LATB3 = !MOTOR_ON;
+        }
+        if (cmd_airbrakes_ext != curr_airbrakes_ext) {
+            //actuate_airbrakes(cmd_airbrakes_ext);
+            curr_airbrakes_ext = cmd_airbrakes_ext;
+        }
+        
+        
 #endif
     }
 }
@@ -255,9 +274,18 @@ static void can_msg_handler(const can_msg_t *msg) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)            
         case ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
-            if (act_id == ACTUATOR_AIRBRAKES_SERVO && state == COAST) {
+            if (act_id == ACTUATOR_AIRBRAKES_SERVO && state == COAST ||
+                    (debug_en && debug_cmd_ext = 
+                    get_req_actuator_state_analog(msg) && state == PRE_FLIGHT))) {
                 cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
             }
+            else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
+                debug_cmd_ext = get_req_actuator_state_analog(msg);
+                debug_msg_time = millis();
+                LATB3 = MOTOR_ON;
+                debug_en = true;
+            }
+            
 #endif
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)            
         case ACT_ANALOG_CMD:
@@ -293,3 +321,27 @@ static void __interrupt() interrupt_handler(void) {
         PIR3bits.TMR0IF = 0;
     }
 }
+
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+void actuate_airbrakes (uint8_t extension) {
+    //percent2Cycle(extension);
+    //do a thing (write a value via PWM to B5)
+    if (debug_en) {
+        debug_en = false;
+        airbrakes_act_time = millis();
+    }
+    
+}
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+void actuate_payload (float extension) {
+    //percent2Cycle(extension);
+    //do another thing (write a value via PWM to B5)
+    
+}
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+uint16_t percent2Cycle (float percent) {
+    return (MIN_CYCLE + percent(MAX_CYCLE - MIN_CYCLE));
+}
+#endif

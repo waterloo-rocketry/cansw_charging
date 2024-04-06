@@ -106,15 +106,3 @@ void update_batt_curr_low_pass(void) {
 uint16_t get_batt_curr_low_pass(void) {
     return (uint16_t)low_pass_curr;
 }
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-void actuate_airbrakes (uint8_t extension) {
-    //do a thing
-    
-}
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOD)
-void actuate_payload (uint8_t extension) {
-    //do another thing
-    
-}
-#endif
