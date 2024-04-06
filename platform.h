@@ -11,13 +11,15 @@
 // Reset if we go this long without seeing any CAN messages (including our own)
 #define MAX_BUS_DEAD_TIME_ms 1000
 
-// Voltage monitoring
+// Voltage monitoring in 100k Ohms
 #define BATT_RESISTANCE_DIVIDER 3.2
 #define GROUND_RESISTANCE_DIVIDER 3.2
-// Current monioring
+// Current monitoring in units of 10 milliohms
 #define CURR_5V_RESISTOR 2.0
-#define CURR_13V_RESISTOR 1.0
+#define CURR_13V_RESISTOR 1.0   
 #define CHG_CURR_RESISTOR 2.0
+#define CURR_BATT_RESISTOR 1.0
+#define CURR_MOTOR_RESISTOR 1.0
 
 void pin_init(void);
 
@@ -27,7 +29,7 @@ void WHITE_LED_SET(bool value);
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 void CAN_5V_SET(bool value);
-void CHARGE_CURR_SET(bool value);
+void BATTERY_CHARGER_EN(bool value);
 #endif
 
 void update_batt_curr_low_pass(void);

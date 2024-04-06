@@ -8,6 +8,9 @@
 #define CAN_5V_ON 1
 #define CHG_BATT_ON 0
 #define MOTOR_ON 1
+#define SAMPLE_FREQ (1000.0 / MAX_SENSOR_LOOP_TIME_DIFF_ms)
+#define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
+#define LOW_PASS_RESPONSE_TIME 10 // seconds
 
 void pin_init(void) {
     // LEDS
@@ -33,12 +36,13 @@ void pin_init(void) {
     TRISB1 = 1; // set 13V current draw (battery) to be input
     ANSELB1 = 1; // enable analog reading
 #endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    TRISB0 = 1; // set 5V current draw (payload logic + motor) to be input
+    ANSELB0 = 1; // enable analog reading
+#endif
     TRISC7 = 1; // set +BATT current draw (battery) to be input
     ANSELC7 = 1; // enable analog reading
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    TRISB2 = 1; // set motor current draw (battery/5V) to be input
-    ANSELB2 = 1; // enable analog reading
-#endif
+
     // Battery charger
     LATA5 = !CHG_BATT_ON; // start with charging disabled
     TRISA5 = 0; // allow battery charging to be toggle-able
@@ -47,10 +51,10 @@ void pin_init(void) {
     ANSELA4 = 1; // enable analog reading
 
     // Voltage health
-    TRISC2 = 1; // set battery voltage to be input
+    TRISC2 = 1; // set +BATT voltage to be input
     ANSELC2 = 1; // enable analog reading
 
-    TRISC3 = 1; // set rocket voltage to be input
+    TRISC3 = 1; // set +13V voltage to be input
     ANSELC3 = 1; // enable analog reading
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
     //setup motor pins
@@ -61,6 +65,9 @@ void pin_init(void) {
     
     TRISB4 = 1; // set motor output to be input
     ANSELB4 = 1; // enable analog reading
+    
+    TRISB2 = 1; // set motor current draw (battery/5V) to be input
+    ANSELB2 = 1; // enable analog reading
 #endif
 }
 
@@ -79,21 +86,16 @@ void WHITE_LED_SET(bool value) {
 void CAN_5V_SET(bool value) {
     LATA3 = !value ^ CAN_5V_ON;
 }
-
-void CHARGE_CURR_SET(bool value) {
+#endif
+void BATTERY_CHARGER_EN(bool value) {
     LATA5 = !value ^ CHG_BATT_ON;
 }
-#endif
 
 // the following code was yoinked from cansw_arming
 
 // zach derived the equation alpha = (Fs*T/5)/ 1 + (Fs*T/5)
 // where Fs = sampling frequency and T = response time
 // response time is equivalent to 5*tau or 5/2pi*Fc, where Fc is cutoff frequency
-
-#define SAMPLE_FREQ (1000.0 / MAX_SENSOR_LOOP_TIME_DIFF_ms)
-#define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
-#define LOW_PASS_RESPONSE_TIME 10 // seconds
 
 double alpha_low = LOW_PASS_ALPHA(LOW_PASS_RESPONSE_TIME);
 double low_pass_curr = 0;

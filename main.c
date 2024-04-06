@@ -1,13 +1,6 @@
 #include <xc.h>
 
 #include "canlib.h"
-#include "canlib/can.h"
-#include "canlib/can_common.h"
-#include "canlib/message_types.h"
-#include "canlib/pic18f26k83/pic18f26k83_can.h"
-#include "canlib/pic18f26k83/pic18f26k83_timer.h"
-#include "canlib/util/can_tx_buffer.h"
-#include "canlib/util/timing_util.h"
 
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
@@ -26,7 +19,7 @@ uint8_t tx_pool[100];
 
 volatile bool seen_can_message = false;
 
-#ifdef (UNIQUE_BOARD_ID == BOARD_ID_CHARGING_AIRBRAKE)
+#if (UNIQUE_BOARD_ID == BOARD_ID_CHARGING_AIRBRAKE)
 //setup airbrakes variables
 uint32_t inj_open_time = 0;
 enum FLIGHT_PHASE {
@@ -35,21 +28,21 @@ enum FLIGHT_PHASE {
     COAST,
     DESCENT,
 };
-uint8_t state = PRE_FLIGHT;
+enum FLIGHT_PHASE state = PRE_FLIGHT;
 float cmd_airbrakes_ext = 0;
 const uint16_t BOOST_LENGTH_MS = 10000; //10000ms = 10s - CHANGE THIS
 const uint16_t COAST_LENGTH_MS = 10000;
 bool debug_en = false;
 float debug_cmd_ext = 0;
 const uint16_t MOTOR_ACT_TIME_MS = 300; //300ms
-uint16_t airbrakes__act_time = 0;
+uint16_t airbrakes_act_time = 0;
 float curr_airbrakes_ext = 0;
-const uint16_t MIN_CYCLE = 500;
-const uint16_t MAX_CYCLE = 2500;
+const uint16_t MIN_PULSE_WIDTH_US = 500;
+const uint16_t MAX_PULSE_WIDTH_US = 2500;
 #endif
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD) 
-const uint_16_t MIN_CYCLE = 0;
-const uint_16_t MAX_CYCLE = 1000; //idk lmao
+const uint16_t MIN_PULSE_WIDTH_US = 0;
+const uint16_t MAX_PULSE_WIDTH_US = 1000; //idk lmao
 #endif
 int main(void) {
     // initialize mcc functions
@@ -131,7 +124,7 @@ int main(void) {
             // voltage filter
             build_analog_data_msg(
                 millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
-            txb_enqueue(&vcc_curr_msg);
+            txb_enqueue(&vcc_curr_msg); //COPY THIS FOR OTHER CURRENT SENSING
 
             can_msg_t bus_curr_msg; // measures current going into CAN 5V
             build_analog_data_msg(
@@ -220,15 +213,15 @@ static void can_msg_handler(const can_msg_t *msg) {
     int act_state;
     int dest_id;
     switch (msg_type) {
-        case MSG_ACTUATOR_CMD:
+        case MSG_ACTUATOR_CMD: //this will toggle *all* battery chargers, not just CHARGING_CAN
             act_id = get_actuator_id(msg);
             act_state = get_req_actuator_state(msg);
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
-                    CHARGE_CURR_SET(true);
+                    BATTERY_CHARGER_EN(true);
                     BLUE_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
-                    CHARGE_CURR_SET(false);
+                    BATTERY_CHARGER_EN(false);
                     BLUE_LED_SET(false);
                 }
             } 
@@ -274,14 +267,13 @@ static void can_msg_handler(const can_msg_t *msg) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)            
         case ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
-            if (act_id == ACTUATOR_AIRBRAKES_SERVO && state == COAST ||
-                    (debug_en && debug_cmd_ext = 
-                    get_req_actuator_state_analog(msg) && state == PRE_FLIGHT))) {
+            if (act_id == ACTUATOR_AIRBRAKES_SERVO && state == COAST || (debug_en 
+                    && debug_cmd_ext == get_req_actuator_state_analog(msg)
+                    && state == PRE_FLIGHT)) {
                 cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
             }
             else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
                 debug_cmd_ext = get_req_actuator_state_analog(msg);
-                debug_msg_time = millis();
                 LATB3 = MOTOR_ON;
                 debug_en = true;
             }
@@ -342,6 +334,6 @@ void actuate_payload (float extension) {
 #endif
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 uint16_t percent2Cycle (float percent) {
-    return (MIN_CYCLE + percent(MAX_CYCLE - MIN_CYCLE));
+    return (MIN_PULSE_WIDTH_US + percent(MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US));
 }
 #endif
