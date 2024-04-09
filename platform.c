@@ -98,13 +98,45 @@ void BATTERY_CHARGER_EN(bool value) {
 // response time is equivalent to 5*tau or 5/2pi*Fc, where Fc is cutoff frequency
 
 double alpha_low = LOW_PASS_ALPHA(LOW_PASS_RESPONSE_TIME);
-double low_pass_curr = 0;
+double low_pass_curr_batt = 0;
+double low_pass_curr_motor = 0;
+double low_pass_curr_13v = 0;
+double low_pass_curr_5v = 0;
 //i think this is needed for 13V BATT Motor and 5V current readings? not sure tho
 void update_batt_curr_low_pass(void) {
     double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
-    low_pass_curr = alpha_low * low_pass_curr + (1.0 - alpha_low) * new_curr_reading;
+    low_pass_curr_batt = alpha_low * low_pass_curr_batt + (1.0 - alpha_low) * new_curr_reading;
 }
 
 uint16_t get_batt_curr_low_pass(void) {
-    return (uint16_t)low_pass_curr;
+    return (uint16_t)low_pass_curr_batt;
 }
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+void update_motor_curr_low_pass(void) {
+    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
+    low_pass_curr_motor = alpha_low * low_pass_curr_motor + (1.0 - alpha_low) * new_curr_reading;
+}
+
+uint16_t get_motor_curr_low_pass(void) {
+    return (uint16_t)low_pass_curr_motor;
+}    
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+void update_13v_curr_low_pass(void) {
+    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
+    low_pass_curr_13v = alpha_low * low_pass_curr_13v + (1.0 - alpha_low) * new_curr_reading;
+}
+
+uint16_t get_13v_curr_low_pass(void) {
+    return (uint16_t)low_pass_curr_13v;
+}
+
+void update_5v_curr_low_pass(void) {
+    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
+    low_pass_curr_5v = alpha_low * low_pass_curr_5v + (1.0 - alpha_low) * new_curr_reading;
+}
+
+uint16_t get_5v_curr_low_pass(void) {
+    return (uint16_t)low_pass_curr_5v;
+}
+#endif

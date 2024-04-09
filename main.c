@@ -109,15 +109,17 @@ int main(void) {
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-            status_ok &= check_bus_current_error();
+            status_ok &= check_5v_current_error();
+            status_ok &= check_13v_current_error();
 #endif
+            status_ok &= check_batt_current_error();
 
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
             }
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-            // Current draws
+/*            // Current draws
             can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
                                     // groundside or lipo battery)
             // implements cansw_arming's rolling average to act as a low-pass
@@ -125,14 +127,18 @@ int main(void) {
             build_analog_data_msg(
                 millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
             txb_enqueue(&vcc_curr_msg); //COPY THIS FOR OTHER CURRENT SENSING
-
-            can_msg_t bus_curr_msg; // measures current going into CAN 5V
+*/
+            can_msg_t 5v_curr_msg; // measures current going into CAN 5V
             build_analog_data_msg(
-                millis(),
-                SENSOR_BUS_CURR,
-                (uint16_t)(ADCC_GetSingleConversion(channel_POWER_V5) / CURR_5V_RESISTOR),
-                &bus_curr_msg);
-            txb_enqueue(&bus_curr_msg);
+                millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(),
+                &5v_curr_msg);
+            txb_enqueue(&5v_curr_msg);
+            
+            can_msg_t 13v_curr_msg; // measures 13V current
+            build_analog_data_msg(
+                millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(),
+                &13v_curr_msg);
+            txb_enqueue(&13v_curr_msg);
 #endif
             // Battery charing current
             can_msg_t chg_curr_msg; // measures charing current going into lipo
@@ -142,7 +148,19 @@ int main(void) {
                 (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR),
                 &chg_curr_msg);
             txb_enqueue(&chg_curr_msg);
-
+            
+            can_msg_t batt_curr_msg; // measures 13V current
+            build_analog_data_msg(
+                millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(),
+                &batt_curr_msg);
+            txb_enqueue(&batt_curr_msg);
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+            can_msg_t motor_curr_msg; // measures 13V current
+            build_analog_data_msg(
+                millis(), SENSOR_MOTOR_CURR, get_13v_curr_low_pass(),
+                &motor_curr_msg);
+            txb_enqueue(&motor_curr_msg);
+#endif            
             // Voltage health
             can_msg_t batt_volt_msg; // measures the lipo battery voltage
             build_analog_data_msg(

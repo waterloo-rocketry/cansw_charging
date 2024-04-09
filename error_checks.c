@@ -51,7 +51,7 @@ bool check_battery_current_error(void) {
         curr_data[1] = (curr_draw_mA >> 0) & 0xff;
 
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_BUS_OVER_CURRENT, curr_data, 2, &error_msg);
+        build_board_stat_msg(timestamp, E_BATT_OVER_CURRENT, curr_data, 2, &error_msg);
         txb_enqueue(&error_msg);
         return false;
     }
@@ -59,18 +59,18 @@ bool check_battery_current_error(void) {
     // things look ok
     return true;
 }
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+bool check_5v_current_error(void) {
+    uint16_t curr_draw_mA = get_5v_curr_low_pass(void);
 
-bool check_bus_current_error(void) {
-    uint16_t curr_draw_mA = ADCC_GetSingleConversion(channel_POWER_V5) / CURR_5V_RESISTOR;
-
-    if (curr_draw_mA > BUS_OVERCURRENT_THRESHOLD_mA) {
+    if (curr_draw_mA > BATT_OVERCURRENT_THRESHOLD_mA) {
         uint32_t timestamp = millis();
         uint8_t curr_data[2] = {0};
         curr_data[0] = (curr_draw_mA >> 8) & 0xff;
         curr_data[1] = (curr_draw_mA >> 0) & 0xff;
 
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_BUS_OVER_CURRENT, curr_data, 2, &error_msg);
+        build_board_stat_msg(timestamp, E_5V_OVER_CURRENT, curr_data, 2, &error_msg);
         txb_enqueue(&error_msg);
         return false;
     }
@@ -78,3 +78,23 @@ bool check_bus_current_error(void) {
     // things look ok
     return true;
 }
+
+bool check_13v_current_error(void) {
+    uint16_t curr_draw_mA = get_13v_curr_low_pass(void);
+
+    if (curr_draw_mA > 13V_OVERCURRENT_THRESHOLD_mA) {
+        uint32_t timestamp = millis();
+        uint8_t curr_data[2] = {0};
+        curr_data[0] = (curr_draw_mA >> 8) & 0xff;
+        curr_data[1] = (curr_draw_mA >> 0) & 0xff;
+
+        can_msg_t error_msg;
+        build_board_stat_msg(timestamp, E_13V_OVER_CURRENT, curr_data, 2, &error_msg);
+        txb_enqueue(&error_msg);
+        return false;
+    }
+
+    // things look ok
+    return true;
+}
+#endif
