@@ -32,7 +32,8 @@ void pin_init(void) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     TRISB0 = 1; // set 5V current draw (can 5V bus) to be input
     ANSELB0 = 1; // enable analog reading
-
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     TRISB1 = 1; // set 13V current draw (battery) to be input
     ANSELB1 = 1; // enable analog reading
 #endif
