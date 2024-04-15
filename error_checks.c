@@ -42,7 +42,7 @@ bool check_battery_voltage_error(void) {
 }
 
 bool check_battery_current_error(void) {
-    uint16_t curr_draw_mA = get_batt_curr_low_pass(void);
+    uint16_t curr_draw_mA = get_batt_curr_low_pass();
 
     if (curr_draw_mA > OVERCURRENT_THRESHOLD_BATT_mA) {
         uint32_t timestamp = millis();
@@ -61,7 +61,7 @@ bool check_battery_current_error(void) {
 }
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 bool check_5v_current_error(void) {
-    uint16_t curr_draw_mA = get_5v_curr_low_pass(void);
+    uint16_t curr_draw_mA = get_5v_curr_low_pass();
 
     if (curr_draw_mA > OVERCURRENT_THRESHOLD_5V_mA) {
         uint32_t timestamp = millis();
@@ -80,7 +80,7 @@ bool check_5v_current_error(void) {
 }
 
 bool check_13v_current_error(void) {
-    uint16_t curr_draw_mA = get_13v_curr_low_pass(void);
+    uint16_t curr_draw_mA = get_13v_curr_low_pass();
 
     if (curr_draw_mA > OVERCURRENT_THRESHOLD_13V_mA) {
         uint32_t timestamp = millis();
@@ -100,7 +100,7 @@ bool check_13v_current_error(void) {
 #endif
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 bool check_motor_current_error(void) {
-    uint16_t curr_draw_mA = get_motor_curr_low_pass(void);
+    uint16_t curr_draw_mA = get_motor_curr_low_pass();
 
     if (curr_draw_mA > OVERCURRENT_THRESHOLD_MOTOR_mA) {
         uint32_t timestamp = millis();
