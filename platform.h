@@ -21,6 +21,8 @@
 #define CURR_BATT_RESISTOR 1.0
 #define CURR_MOTOR_RESISTOR 1.0
 
+#define IS_KETO true //for testing on keto board only
+
 void pin_init(void);
 
 void RED_LED_SET(bool value);

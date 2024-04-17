@@ -12,6 +12,85 @@
 #define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
 #define LOW_PASS_RESPONSE_TIME 10 // seconds
 
+#if IS_KETO
+void pin_init(void) {
+    // LEDS
+    TRISB4 = 0; // set B4 as output (to D3 - Red indicator)
+    ANSELB4 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATB4 = !LED_ON; // start off
+    
+    TRISB3 = 0; // set B4 as output (to D4 - Blue indicator)
+    ANSELB3 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATB3 = !LED_ON; // start off
+    
+    TRISB2 = 0; // set B4 as output (to D5 - heartbeat indicator)
+    ANSELB2 = 0; // enable digital input buffer (Useful for reading the LED state)
+    LATB2 = !LED_ON; // start off
+/* Not testing on Keto
+    // Rocket power lines
+    TRISB0 = 1; // set 5V current draw (can 5V bus) to be input
+    ANSELB0 = 1; // enable analog reading
+#endif
+    LATA3 = CAN_5V_ON;
+    TRISA3 = 0; // allow 5V current line to be toggle-able
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD )
+    TRISB1 = 1; // set 13V current draw (battery) to be input
+    ANSELB1 = 1; // enable analog reading
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    TRISB0 = 1; // set 5V current draw (payload logic + motor) to be input
+    ANSELB0 = 1; // enable analog reading
+#endif
+    TRISC7 = 1; // set +BATT current draw (battery) to be input
+    ANSELC7 = 1; // enable analog reading
+
+    // Battery charger
+    LATA5 = !CHG_BATT_ON; // start with charging disabled
+    TRISA5 = 0; // allow battery charging to be toggle-able
+
+    TRISA4 = 1; // set battery charging current to be input
+    ANSELA4 = 1; // enable analog reading
+
+    // Voltage health
+    TRISC2 = 1; // set +BATT voltage to be input
+    ANSELC2 = 1; // enable analog reading
+
+    TRISC3 = 1; // set +13V voltage to be input
+    ANSELC3 = 1; // enable analog reading
+ */
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
+    //setup motor pins
+    LATB0 = !MOTOR_ON; // start with motor disabled
+    TRISB0 = 0; // allow motor to be toggled (visualized on D7)
+    
+    TRISB1 = 0; // set motor input to be output (visualized on D6)
+}
+/* All of these change the status LED (D3) and heartbeat LED (D4) on Keto Board*/
+void RED_LED_SET(bool value) {
+    LATB4 = !value ^ LED_ON;
+}
+void BLUE_LED_SET(bool value) {
+    LATB3 = !value ^ LED_ON;
+}
+void WHITE_LED_SET(bool value) {
+    LATB2 = !value ^ LED_ON;
+}
+void FLASH_MOTOR_LED(float percent) {
+    
+}
+/*-------------------------------------------------*/
+
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+void CAN_5V_SET(bool value) {
+    LATA3 = !value ^ CAN_5V_ON;
+}
+#endif
+void BATTERY_CHARGER_EN(bool value) {
+    LATA5 = !value ^ CHG_BATT_ON;
+}
+
+#else
 void pin_init(void) {
     // LEDS
     TRISA2 = 0; // set red LED pin as output
@@ -71,7 +150,6 @@ void pin_init(void) {
     ANSELB2 = 1; // enable analog reading
 #endif
 }
-
 void RED_LED_SET(bool value) {
     LATA2 = !value ^ LED_ON;
 }
@@ -91,7 +169,7 @@ void CAN_5V_SET(bool value) {
 void BATTERY_CHARGER_EN(bool value) {
     LATA5 = !value ^ CHG_BATT_ON;
 }
-
+#endif
 // the following code was yoinked from cansw_arming
 
 // zach derived the equation alpha = (Fs*T/5)/ 1 + (Fs*T/5)

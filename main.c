@@ -21,7 +21,7 @@ uint8_t tx_pool[100];
 
 volatile bool seen_can_message = false;
 
-#if (UNIQUE_BOARD_ID == BOARD_ID_CHARGING_AIRBRAKE)
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 //setup airbrakes variables
 uint32_t inj_open_time = 0;
 enum FLIGHT_PHASE {
@@ -36,7 +36,7 @@ const uint16_t BOOST_LENGTH_MS = 10000; //10000ms = 10s - CHANGE THIS
 const uint16_t COAST_LENGTH_MS = 10000;
 bool debug_en = false;
 float debug_cmd_ext = 0;
-const uint16_t MOTOR_ACT_TIME_MS = 300; //300ms
+const uint16_t MOTOR_ACT_TIME_MS = 2000;
 uint16_t airbrakes_act_time = 0;
 float curr_airbrakes_ext = 0;
 const uint16_t MIN_PULSE_WIDTH_US = 500;
@@ -194,8 +194,11 @@ int main(void) {
         if (millis() - inj_open_time > BOOST_LENGTH_MS && state == BOOST)
         {
             state = COAST;
+#if (IS_KETO)
+            LATB0 = MOTOR_ON;
+#else
             LATB3 = MOTOR_ON;
-            
+#endif            
         }
         if (millis() - inj_open_time > BOOST_LENGTH_MS + COAST_LENGTH_MS && state == COAST)
         {
@@ -207,17 +210,31 @@ int main(void) {
             
             
         }
-        if (millis() - MOTOR_ACT_TIME_MS > airbrakes_act_time && (state == PRE_FLIGHT || state == DESCENT)
+        if (millis() - MOTOR_ACT_TIME_MS > airbrakes_act_time && (state == PRE_FLIGHT || state == DESCENT))
         {
+#if (IS_KETO)
+            LATB0 = !MOTOR_ON;
+#else
             LATB3 = !MOTOR_ON;
+#endif
         }
-        if (!(cmd_airbrakes_ext == curr_airbrakes_ext))
+        if (cmd_airbrakes_ext != curr_airbrakes_ext)
         {
             //actuate_airbrakes(cmd_airbrakes_ext);
-            curr_airbrakes_ext = cmd_airbrakes_ext
-        }      
+            curr_airbrakes_ext = cmd_airbrakes_ext;
+        } //this might just be actuate_airbrakes(cmd_airbrakes_ext)
+#if (IS_KETO)
+        if (curr_airbrakes_ext != 0)
+        {
+            LATB1 = MOTOR_ON;
+        }
+        else 
+        {
+            LATB1 = !MOTOR_ON;
+        }
 #endif
-    }
+#endif
+    }    
 }
 
 static void can_msg_handler(const can_msg_t *msg) {
@@ -294,7 +311,11 @@ static void can_msg_handler(const can_msg_t *msg) {
             }
             else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
                 debug_cmd_ext = get_req_actuator_state_analog(msg);
-                LATB3 = MOTOR_ON;
+#if (IS_KETO)
+            LATB0 = MOTOR_ON;
+#else
+            LATB3 = MOTOR_ON;
+#endif
                 debug_en = true;
             }
             
@@ -354,8 +375,8 @@ void actuate_payload (float extension) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 float percent2Cycle (float percent) {
     
-    uint16_t pulse_width_us = MIN_PULSE_WIDTH_US + percent * (MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US));
-    return pulse_width / (1.0 / MOTOR_FREQUENCY_HZ * 1000000) * 100 //conversion of 1/hz to us
+    uint16_t pulse_width_us = MIN_PULSE_WIDTH_US + percent * (MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US);
+    return pulse_width_us / (1.0 / MOTOR_FREQUENCY_HZ * 1000000) * 100; //conversion of 1/hz to us
 }
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 float percent2Cycle (float percent) {
