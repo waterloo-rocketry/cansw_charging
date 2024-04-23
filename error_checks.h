@@ -15,8 +15,8 @@
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 // From bus line. At this current, a warning will be sent out over CAN
-#define OVERCURRENT_THRESHOLD_5V_mA 2950 //buck rated for 3A max
-#define OVERCURRENT_THRESHOLD_13V_mA 2950 //buck rated for 3A max
+#define OVERCURRENT_THRESHOLD_5V_mA 1900 //buck rated for 2A max
+#define OVERCURRENT_THRESHOLD_13V_mA 2900 //buck rated for 3A max
 
 #endif
 

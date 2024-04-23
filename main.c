@@ -33,21 +33,24 @@ enum FLIGHT_PHASE {
     DESCENT,
 };
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-float cmd_airbrakes_ext = 0;
 const uint16_t BOOST_LENGTH_MS = 10000; // 10000ms = 10s - CHANGE THIS
 const uint16_t COAST_LENGTH_MS = 10000;
-bool debug_en = false;
-float debug_cmd_ext = 0;
+volatile bool debug_en = false;
+
+//percentages from 0 to 1
+volatile float cmd_airbrakes_ext = 0;
+volatile float debug_cmd_ext = 0;
+float curr_airbrakes_ext = 0;
+
 const uint16_t MOTOR_ACT_TIME_MS = 2000;
 uint16_t airbrakes_act_time = 0;
-float curr_airbrakes_ext = 0;
 const uint16_t MIN_PULSE_WIDTH_US = 500;
 const uint16_t MAX_PULSE_WIDTH_US = 2500;
 const uint16_t MOTOR_FREQUENCY_HZ = 50;
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 const uint16_t MIN_PULSE_WIDTH_US = 0;
-const uint16_t MAX_PULSE_WIDTH_US = 1000; // idk lmao
-uint16_t cmd_payload_rpm = 0;
+const uint16_t MAX_PULSE_WIDTH_US = 1000; 
+uint16_t cmd_payload_rpm = 0; //payload is just running at one speed?
 #endif
 int main(void) {
     // initialize mcc functions
