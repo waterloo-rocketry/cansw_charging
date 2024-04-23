@@ -42,7 +42,7 @@ volatile float cmd_airbrakes_ext = 0;
 volatile float debug_cmd_ext = 0;
 float curr_airbrakes_ext = 0;
 
-const uint16_t MOTOR_ACT_TIME_MS = 2000;
+const uint16_t MOTOR_ACT_TIME_MS = 500;
 uint16_t airbrakes_act_time = 0;
 const uint16_t MIN_PULSE_WIDTH_US = 500;
 const uint16_t MAX_PULSE_WIDTH_US = 2500;
@@ -365,8 +365,7 @@ static void __interrupt() interrupt_handler(void) {
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 void actuate_airbrakes(float extension) {
-    float cycle = percent2Cycle(extension);
-    // do a thing (write a value via PWM to B5)
+    pwm_set_duty_cycle(uint16_t(100.0 * percent2Cycle(extension)));
     if (debug_en) {
         debug_en = false;
         airbrakes_act_time = millis();
