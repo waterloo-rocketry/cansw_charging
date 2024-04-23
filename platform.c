@@ -19,11 +19,11 @@ void pin_init(void) {
     ANSELB4 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATB4 = !LED_ON; // start off
     
-    TRISB3 = 0; // set B4 as output (to D4 - Blue indicator)
+    TRISB3 = 0; // set B3 as output (to D4 - Blue indicator)
     ANSELB3 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATB3 = !LED_ON; // start off
     
-    TRISB2 = 0; // set B4 as output (to D5 - heartbeat indicator)
+    TRISB2 = 0; // set B2 as output (to D5 - heartbeat indicator)
     ANSELB2 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATB2 = !LED_ON; // start off
 /* Not testing on Keto
@@ -61,12 +61,15 @@ void pin_init(void) {
  */
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
     //setup motor pins
-    LATB0 = !MOTOR_ON; // start with motor disabled
+    
     TRISB0 = 0; // allow motor to be toggled (visualized on D7)
+    LATB0 = !MOTOR_ON; // start with motor disabled
     
     TRISB1 = 0; // set motor input to be output (visualized on D6)
+    LATB1 = !MOTOR_ON; // start with motor disabled
+#endif
 }
-/* All of these change the status LED (D3) and heartbeat LED (D4) on Keto Board*/
+
 void RED_LED_SET(bool value) {
     LATB4 = !value ^ LED_ON;
 }
@@ -81,7 +84,7 @@ void FLASH_MOTOR_LED(float percent) {
 }
 /*-------------------------------------------------*/
 
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 void CAN_5V_SET(bool value) {
     LATA3 = !value ^ CAN_5V_ON;
 }

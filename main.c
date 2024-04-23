@@ -92,7 +92,7 @@ int main(void) {
 #endif
 
     // loop timer
-    uint32_t last_millis = millis();
+    uint32_t last_millis = 0;
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
 
@@ -115,7 +115,8 @@ int main(void) {
             RESET();
         }
 
-        if (millis() - last_millis > MAX_LOOP_TIME_DIFF_ms) {
+        uint32_t mls = millis();
+        if ((mls - last_millis) > MAX_LOOP_TIME_DIFF_ms) {
             // update our loop counter
             last_millis = millis();
 
