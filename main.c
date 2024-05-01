@@ -14,7 +14,7 @@
 
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
-float percent2Cycle(float percent);
+void actuate_airbrakes(float extension);
 extern void timer2_handle_interrupt(void);
 
 // memory pool for the CAN tx buffer
@@ -102,6 +102,7 @@ int main(void) {
     #endif
         
     pwm_init(PWM_PERIOD); 
+    pwm_enable();
 #endif
 
     // loop timer
@@ -323,11 +324,11 @@ static void can_msg_handler(const can_msg_t *msg) {
             act_id = get_actuator_id(msg);
             if (act_id == ACTUATOR_AIRBRAKES_SERVO &&
                 (state == COAST ||
-                 (debug_en && debug_cmd_ext == get_req_actuator_state_analog(msg) &&
+                 (debug_en && debug_cmd_airbrakes_ext == get_req_actuator_state_analog(msg) &&
                   state == PRE_FLIGHT))) {
-                cmd_airbrakes_ext = debug_cmd_ext;
+                cmd_airbrakes_ext = debug_cmd_airbrakes_ext;
             } else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
-                debug_cmd_ext = get_req_actuator_state_analog(msg);
+                debug_cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
 #if (IS_KETO)
                 LATB0 = MOTOR_ON;
 #else
