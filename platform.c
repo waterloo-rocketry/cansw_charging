@@ -63,10 +63,10 @@ void pin_init(void) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
     //setup motor pins
     TRISB0 = 0; // motor power enable (visualized on D7)
-    LATB0 = !MOTOR_ON; // start with motor disabled
+    LATB0 = 1; // start with motor disabled
     
     TRISB1 = 0; // motor PWM output (visualized on D6)
-    LATB1 = 0;
+    LATB1 = 1;
 #endif
 }
 

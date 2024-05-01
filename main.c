@@ -52,7 +52,7 @@ const uint16_t MOTOR_MIN_EXT_DEG = 0.0;
 const uint16_t MOTOR_MAX_EXT_DEG = 180.0;
 const uint16_t AB_MIN_EXT_DEG = 20; //under this the servo will stall - 20 deg
 const uint16_t AB_MAX_EXT_DEG = 140; //over this the servo will stall -  140 deg
-const uint16_t PWM_PERIOD = 500; // 500*10us = 5ms period - 50us at 1% DC, 2500us at 50% DC 
+const uint16_t PWM_PERIOD = 1000; // 1000*10us = 10ms period - 50us at 0.5% DC, 2500us at 25% DC 
 
 #define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
 #define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
@@ -95,9 +95,9 @@ int main(void) {
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     // set up PWM
-    pwm_init(PWM_PERIOD);
-    pwm_set_duty_cycle(0);
+    pwm_init(PWM_PERIOD); //need to use 1000 for now
     pwm_enable();
+    pwm_set_duty_cycle(1);
 #endif
 
     // loop timer
@@ -109,8 +109,6 @@ int main(void) {
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
         
-        pwm_set_duty_cycle(10); // 1% of 5ms = 50 us
-
         if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
             oscillator_init();
         }
@@ -226,7 +224,7 @@ int main(void) {
             state = DESCENT;
             
             //close the airbrakes
-            //actuate_airbrakes(0);
+            actuate_airbrakes(0);
             airbrakes_act_time = millis();
         }
         if ((millis() - MOTOR_ACT_TIME_MS) > airbrakes_act_time &&
@@ -238,7 +236,7 @@ int main(void) {
     #endif
         }
         if (cmd_airbrakes_ext != curr_airbrakes_ext) {
-            //actuate_airbrakes(cmd_airbrakes_ext);
+            actuate_airbrakes(cmd_airbrakes_ext);
             curr_airbrakes_ext = cmd_airbrakes_ext;
         }
     #if (IS_KETO)
