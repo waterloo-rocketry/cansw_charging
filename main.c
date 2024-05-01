@@ -95,13 +95,8 @@ int main(void) {
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     // set up PWM
-    #if (IS_KETO)
-        TRISB1 = 0; //Keto D6
-    #else
-        TRISB5 = 0;
-    #endif
-        
-    pwm_init(PWM_PERIOD); 
+    pwm_init(PWM_PERIOD);
+    pwm_set_duty_cycle(0);
     pwm_enable();
 #endif
 
@@ -113,6 +108,8 @@ int main(void) {
     bool heartbeat = false;
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
+        
+        pwm_set_duty_cycle(10); // 1% of 5ms = 50 us
 
         if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
             oscillator_init();
@@ -220,7 +217,7 @@ int main(void) {
         if ((millis() - inj_open_time) > BOOST_LENGTH_MS && state == BOOST) {
             state = COAST;
     #if (IS_KETO)
-            LATB0 = MOTOR_ON;
+            LATB0 = 0; // Keto D7
     #else
             LATB3 = MOTOR_ON;
     #endif
@@ -229,24 +226,24 @@ int main(void) {
             state = DESCENT;
             
             //close the airbrakes
-            actuate_airbrakes(0);
+            //actuate_airbrakes(0);
             airbrakes_act_time = millis();
         }
         if ((millis() - MOTOR_ACT_TIME_MS) > airbrakes_act_time &&
             (state == PRE_FLIGHT || state == DESCENT)) {
     #if (IS_KETO)
-            LATB0 = !MOTOR_ON;
+            LATB0 = 1; // Keto D7
     #else
             LATB3 = !MOTOR_ON;
     #endif
         }
         if (cmd_airbrakes_ext != curr_airbrakes_ext) {
-            // actuate_airbrakes(cmd_airbrakes_ext);
+            //actuate_airbrakes(cmd_airbrakes_ext);
             curr_airbrakes_ext = cmd_airbrakes_ext;
-        } // this might just be actuate_airbrakes(cmd_airbrakes_ext)
+        }
     #if (IS_KETO)
         if (curr_airbrakes_ext != 0) {
-            LATB1 = MOTOR_ON;
+            LATB1 = MOTOR_ON; // Keto D6
         } else {
             LATB1 = !MOTOR_ON;
         }
@@ -271,6 +268,8 @@ static void can_msg_handler(const can_msg_t *msg) {
         case MSG_ACTUATOR_CMD: // this will toggle *all* battery chargers, not just CHARGING_CAN
             act_id = get_actuator_id(msg);
             act_state = get_req_actuator_state(msg);
+            
+            //Battery Charger On/Off
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
@@ -280,6 +279,8 @@ static void can_msg_handler(const can_msg_t *msg) {
                     BLUE_LED_SET(false);
                 }
             }
+            
+            //RocketCAN 5V Line On/Off
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
@@ -291,7 +292,7 @@ static void can_msg_handler(const can_msg_t *msg) {
                 }
             }
 #endif
-
+            //Catch injector valve open command to signal boost phase
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             else if (act_id == ACTUATOR_INJECTOR_VALVE && act_state == ACTUATOR_ON) {
                 // inj open -> we're launching
@@ -319,6 +320,8 @@ static void can_msg_handler(const can_msg_t *msg) {
                 RESET();
             }
             break;
+            
+            //Airbrakes servo command logic
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
@@ -327,16 +330,18 @@ static void can_msg_handler(const can_msg_t *msg) {
                  (debug_en && debug_cmd_airbrakes_ext == get_req_actuator_state_analog(msg) &&
                   state == PRE_FLIGHT))) {
                 cmd_airbrakes_ext = debug_cmd_airbrakes_ext;
-            } else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
+            } 
+            else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
                 debug_cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
 #if (IS_KETO)
-                LATB0 = MOTOR_ON;
+                LATB0 = 0; //Keto D7
 #else
                 LATB3 = MOTOR_ON;
 #endif
                 debug_en = true;
             }
-
+            
+            //Payload servo command logic
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
@@ -354,8 +359,6 @@ static void can_msg_handler(const can_msg_t *msg) {
 static void send_status_ok(void) {
     can_msg_t board_stat_msg;
     build_board_stat_msg(millis(), E_NOMINAL, NULL, 0, &board_stat_msg);
-
-    // send it off at low priority
     txb_enqueue(&board_stat_msg);
 }
 
@@ -381,8 +384,8 @@ static void __interrupt() interrupt_handler(void) {
 
 //Motor control functions
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-void actuate_airbrakes(float extension) { //take extension from 0-1
-    pwm_set_duty_cycle( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / (PWM_PERIOD / 100) ); //driver takes
+void actuate_airbrakes(float extension) {
+    pwm_set_duty_cycle( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / (PWM_PERIOD / 100) );
     if (debug_en) {
         debug_en = false;
         airbrakes_act_time = millis();

@@ -26,6 +26,7 @@ void pin_init(void) {
     TRISB2 = 0; // set B2 as output (to D5 - heartbeat indicator)
     ANSELB2 = 0; // enable digital input buffer (Useful for reading the LED state)
     LATB2 = !LED_ON; // start off
+    
 /* Not testing on Keto
     // Rocket power lines
     TRISB0 = 1; // set 5V current draw (can 5V bus) to be input
@@ -61,12 +62,11 @@ void pin_init(void) {
  */
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
     //setup motor pins
-    
-    TRISB0 = 0; // allow motor to be toggled (visualized on D7)
+    TRISB0 = 0; // motor power enable (visualized on D7)
     LATB0 = !MOTOR_ON; // start with motor disabled
     
-    TRISB1 = 0; // set motor input to be output (visualized on D6)
-    LATB1 = !MOTOR_ON; // start with motor disabled
+    TRISB1 = 0; // motor PWM output (visualized on D6)
+    LATB1 = 0;
 #endif
 }
 
