@@ -89,6 +89,7 @@ void CAN_5V_SET(bool value) {
     LATA3 = !value ^ CAN_5V_ON;
 }
 #endif
+
 void BATTERY_CHARGER_EN(bool value) {
     LATA5 = !value ^ CHG_BATT_ON;
 }
@@ -203,6 +204,8 @@ uint16_t get_motor_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_motor;
 }    
 #endif
+
+
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 void update_13v_curr_low_pass(void) {
     double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;

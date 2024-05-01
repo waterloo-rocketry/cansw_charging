@@ -15,7 +15,6 @@
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 float percent2Cycle(float percent);
-
 extern void timer2_handle_interrupt(void);
 
 // memory pool for the CAN tx buffer
@@ -23,35 +22,49 @@ uint8_t tx_pool[100];
 
 volatile bool seen_can_message = false;
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 // setup airbrakes variables
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 uint32_t inj_open_time = 0;
+
 enum FLIGHT_PHASE {
     PRE_FLIGHT = 0,
     BOOST,
     COAST,
     DESCENT,
 };
+
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-const uint16_t BOOST_LENGTH_MS = 10000; // 10000ms = 10s - CHANGE THIS
-const uint16_t COAST_LENGTH_MS = 10000;
+const uint32_t BOOST_LENGTH_MS = 10000; // 10000ms = 10s - CHANGE THIS
+const uint32_t COAST_LENGTH_MS = 10000;
 volatile bool debug_en = false;
 
-//percentages from 0 to 1
+//Commanded extension is 0-1 as fraction of full extension
 volatile float cmd_airbrakes_ext = 0;
-volatile float debug_cmd_ext = 0;
+volatile float debug_cmd_airbrakes_ext = 0;
 float curr_airbrakes_ext = 0;
+uint32_t airbrakes_act_time = 0;
 
-const uint16_t MOTOR_ACT_TIME_MS = 500;
-uint16_t airbrakes_act_time = 0;
-const uint16_t MIN_PULSE_WIDTH_US = 500;
-const uint16_t MAX_PULSE_WIDTH_US = 2500;
-const uint16_t MOTOR_FREQUENCY_HZ = 50;
+//motor constants
+const uint32_t MOTOR_ACT_TIME_MS = 500; //Motor guaranteed to fully actuate in this time
+const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 50; // corresponds to 0 deg
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 180 deg
+const uint16_t MOTOR_MIN_EXT_DEG = 0.0;
+const uint16_t MOTOR_MAX_EXT_DEG = 180.0;
+const uint16_t AB_MIN_EXT_DEG = 20; //under this the servo will stall - 20 deg
+const uint16_t AB_MAX_EXT_DEG = 140; //over this the servo will stall -  140 deg
+const uint16_t PWM_PERIOD = 500; // 500*10us = 5ms period - 50us at 1% DC, 2500us at 50% DC 
+
+#define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
+#define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
+#define PERCENT_TO_PULSEWIDTH(percent) ( DEG_TO_PULSEWIDTH(PERCENT_TO_DEG(percent)) )
+
+//setup payload variables
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 const uint16_t MIN_PULSE_WIDTH_US = 0;
 const uint16_t MAX_PULSE_WIDTH_US = 1000; 
-uint16_t cmd_payload_rpm = 0; //payload is just running at one speed?
+uint16_t cmd_payload_rpm = 0; //payload is just running at one speed? make const?
 #endif
+
 int main(void) {
     // initialize mcc functions
     ADCC_Initialize();
@@ -82,13 +95,13 @@ int main(void) {
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     // set up PWM
-#if (IS_KETO)
-    TRISB1 = 0;
-#else
-    TRISB5 = 0;
-#endif
-    // FIXME: Update macro definition when changing PWM pin
-    pwm_init(1000);
+    #if (IS_KETO)
+        TRISB1 = 0; //Keto D6
+    #else
+        TRISB5 = 0;
+    #endif
+        
+    pwm_init(PWM_PERIOD); 
 #endif
 
     // loop timer
@@ -128,12 +141,11 @@ int main(void) {
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
+            status_ok &= check_battery_current_error();
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_5v_current_error();
             status_ok &= check_13v_current_error();
 #endif
-            status_ok &= check_battery_current_error();
-
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
@@ -157,8 +169,8 @@ int main(void) {
                 millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
 #endif
-            // Battery charing current
-            can_msg_t curr_msg_chg; // measures charing current going into lipo
+            // Battery charging current
+            can_msg_t curr_msg_chg; // charging current going into lipo
             build_analog_data_msg(
                 millis(),
                 SENSOR_CHARGE_CURR,
@@ -166,18 +178,20 @@ int main(void) {
                 &curr_msg_chg);
             txb_enqueue(&curr_msg_chg);
 
-            can_msg_t curr_msg_batt; // measures 13V current
+            can_msg_t curr_msg_batt; // current draw from lipo
             build_analog_data_msg(
                 millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
             txb_enqueue(&curr_msg_batt);
+
+            // measure motor current            
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-            can_msg_t curr_msg_motor; // measures 13V current
+            can_msg_t curr_msg_motor;
             build_analog_data_msg(
-                millis(), SENSOR_MOTOR_CURR, get_13v_curr_low_pass(), &curr_msg_motor);
+                millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
             txb_enqueue(&curr_msg_motor);
 #endif
             // Voltage health
-            can_msg_t batt_volt_msg; // measures the lipo battery voltage
+            can_msg_t batt_volt_msg; // lipo battery voltage
             build_analog_data_msg(
                 millis(),
                 SENSOR_BATT_VOLT,
@@ -185,57 +199,57 @@ int main(void) {
                 &batt_volt_msg);
             txb_enqueue(&batt_volt_msg);
 
-            can_msg_t ground_volt_msg; // measures the groundside battery voltage
+            can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(millis(),
-                                  SENSOR_GROUND_VOLT,
-                                  (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) *
-                                             GROUND_RESISTANCE_DIVIDER),
-                                  &ground_volt_msg);
+                SENSOR_GROUND_VOLT,
+                (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER),
+                &ground_volt_msg);
             txb_enqueue(&ground_volt_msg);
         }
         // send any queued CAN messages
         txb_heartbeat();
 
-        // high speed sensor checking
+        // update high speed sensor lowpass
         if (millis() - sensor_last_millis > MAX_SENSOR_LOOP_TIME_DIFF_ms) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
         }
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
         // change flight state
-        if (millis() - inj_open_time > BOOST_LENGTH_MS && state == BOOST) {
+        if ((millis() - inj_open_time) > BOOST_LENGTH_MS && state == BOOST) {
             state = COAST;
-#if (IS_KETO)
+    #if (IS_KETO)
             LATB0 = MOTOR_ON;
-#else
+    #else
             LATB3 = MOTOR_ON;
-#endif
+    #endif
         }
-        if (millis() - inj_open_time > BOOST_LENGTH_MS + COAST_LENGTH_MS && state == COAST) {
+        if ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS) && state == COAST) {
             state = DESCENT;
-
-            // actuate_airbrakes(MIN_PWM);
+            
+            //close the airbrakes
+            actuate_airbrakes(0);
             airbrakes_act_time = millis();
         }
-        if (millis() - MOTOR_ACT_TIME_MS > airbrakes_act_time &&
+        if ((millis() - MOTOR_ACT_TIME_MS) > airbrakes_act_time &&
             (state == PRE_FLIGHT || state == DESCENT)) {
-#if (IS_KETO)
+    #if (IS_KETO)
             LATB0 = !MOTOR_ON;
-#else
+    #else
             LATB3 = !MOTOR_ON;
-#endif
+    #endif
         }
         if (cmd_airbrakes_ext != curr_airbrakes_ext) {
             // actuate_airbrakes(cmd_airbrakes_ext);
             curr_airbrakes_ext = cmd_airbrakes_ext;
         } // this might just be actuate_airbrakes(cmd_airbrakes_ext)
-#if (IS_KETO)
+    #if (IS_KETO)
         if (curr_airbrakes_ext != 0) {
             LATB1 = MOTOR_ON;
         } else {
             LATB1 = !MOTOR_ON;
         }
-#endif
+    #endif
 #endif
     }
 }
@@ -364,30 +378,23 @@ static void __interrupt() interrupt_handler(void) {
     }
 }
 
+//Motor control functions
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-void actuate_airbrakes(float extension) {
-    pwm_set_duty_cycle(uint16_t(100.0 * percent2Cycle(extension)));
+void actuate_airbrakes(float extension) { //take extension from 0-1
+    pwm_set_duty_cycle( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / (PWM_PERIOD / 100) ); //driver takes
     if (debug_en) {
         debug_en = false;
         airbrakes_act_time = millis();
     }
 }
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-void actuate_payload(float extension) {
-    // percent2Cycle(extension);
-    // do another thing (write a value via PWM to B5)
-}
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-float percent2Cycle(float percent) {
 
-    uint16_t pulse_width_us =
-        MIN_PULSE_WIDTH_US + percent * (MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US);
-    return pulse_width_us / (1.0 / MOTOR_FREQUENCY_HZ * 1000000) * 100; // conversion of 1/hz to us
-}
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 float percent2Cycle(float percent) {
     return (MIN_PULSE_WIDTH_US + percent * (MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US));
+}
+
+void actuate_payload(float extension) {
+    // percent2Cycle(extension);
+    // do another thing (write a value via PWM to B5)
 }
 #endif
