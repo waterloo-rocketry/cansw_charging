@@ -10,7 +10,15 @@
 #include "platform.h"
 #include "pwm.h"
 
-#define MOTOR_ON 1;
+#if (IS_KETO)
+#define MOTOR_POWER LATB0 //Keto D7
+#define MOTOR_PWM LATB1 //Keto D6
+#define MOTOR_ON 0
+#else
+#define MOTOR_POWER LATB3
+#define MOTOR_PWM LATB5
+#define MOTOR_ON 1             
+#endif
 
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
@@ -35,7 +43,7 @@ enum FLIGHT_PHASE {
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
 const uint32_t BOOST_LENGTH_MS = 10000; // 10000ms = 10s - CHANGE THIS
-const uint32_t COAST_LENGTH_MS = 10000;
+const uint32_t COAST_LENGTH_MS = 20000;
 volatile bool debug_en = false;
 
 //Commanded extension is 0-1 as fraction of full extension
@@ -45,14 +53,14 @@ float curr_airbrakes_ext = 0;
 uint32_t airbrakes_act_time = 0;
 
 //motor constants
-const uint32_t MOTOR_ACT_TIME_MS = 500; //Motor guaranteed to fully actuate in this time
+const uint32_t MOTOR_ACT_TIME_MS = 5000; //Motor guaranteed to fully actuate in this time
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 50; // corresponds to 0 deg
 const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 180 deg
-const uint16_t MOTOR_MIN_EXT_DEG = 0.0;
-const uint16_t MOTOR_MAX_EXT_DEG = 180.0;
-const uint16_t AB_MIN_EXT_DEG = 20; //under this the servo will stall - 20 deg
-const uint16_t AB_MAX_EXT_DEG = 140; //over this the servo will stall -  140 deg
-const uint16_t PWM_PERIOD = 1000; // 1000*10us = 10ms period - 50us at 0.5% DC, 2500us at 25% DC 
+const float MOTOR_MIN_EXT_DEG = 0.0;
+const float MOTOR_MAX_EXT_DEG = 180.0;
+const uint16_t AB_MIN_EXT_DEG = 0; //under this the servo will stall - 20 deg
+const uint16_t AB_MAX_EXT_DEG = 180; //over this the servo will stall -  140 deg
+const uint16_t PWM_PERIOD = 500; // 1000*10us = 10ms period - 50us at 0.5% DC, 2500us at 25% DC
 
 #define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
 #define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
@@ -97,7 +105,7 @@ int main(void) {
     // set up PWM
     pwm_init(PWM_PERIOD); //need to use 1000 for now
     pwm_enable();
-    pwm_set_duty_cycle(1);
+    pwm_set_pulse_width( (uint16_t) PERCENT_TO_PULSEWIDTH(0) / 10);
 #endif
 
     // loop timer
@@ -108,7 +116,8 @@ int main(void) {
     bool heartbeat = false;
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
-        
+        RED_LED_SET(state == BOOST); //Keto stuff
+        BLUE_LED_SET(state == COAST); 
         if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
             oscillator_init();
         }
@@ -211,41 +220,33 @@ int main(void) {
             update_batt_curr_low_pass();
         }
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-        // change flight state
-        if ((millis() - inj_open_time) > BOOST_LENGTH_MS && state == BOOST) {
+        // state transition from boost to coast, enable motor
+        if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
             state = COAST;
-    #if (IS_KETO)
-            LATB0 = 0; // Keto D7
-    #else
-            LATB3 = MOTOR_ON;
-    #endif
+            MOTOR_POWER = MOTOR_ON;
         }
-        if ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS) && state == COAST) {
+        
+        //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
+        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
             state = DESCENT;
             
-            //close the airbrakes
-            actuate_airbrakes(0);
+            MOTOR_POWER = MOTOR_ON;
+            cmd_airbrakes_ext = 0;
             airbrakes_act_time = millis();
         }
-        if ((millis() - MOTOR_ACT_TIME_MS) > airbrakes_act_time &&
-            (state == PRE_FLIGHT || state == DESCENT)) {
-    #if (IS_KETO)
-            LATB0 = 1; // Keto D7
-    #else
-            LATB3 = !MOTOR_ON;
-    #endif
+        
+        //If we are on the ground or in descent, cut motor power after a certain period of time
+        if ((state == PRE_FLIGHT || state == DESCENT) 
+                && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
+            
+            MOTOR_POWER = !MOTOR_ON;
+            cmd_airbrakes_ext = 0;
         }
+        
         if (cmd_airbrakes_ext != curr_airbrakes_ext) {
             actuate_airbrakes(cmd_airbrakes_ext);
             curr_airbrakes_ext = cmd_airbrakes_ext;
         }
-    #if (IS_KETO)
-        if (curr_airbrakes_ext != 0) {
-            LATB1 = MOTOR_ON; // Keto D6
-        } else {
-            LATB1 = !MOTOR_ON;
-        }
-    #endif
 #endif
     }
 }
@@ -301,8 +302,8 @@ static void can_msg_handler(const can_msg_t *msg) {
             break;
 
         case MSG_LEDS_ON:
-            RED_LED_SET(true);
-            BLUE_LED_SET(true);
+            RED_LED_SET(true); //Keto D3
+            BLUE_LED_SET(true); //Keto D4
             WHITE_LED_SET(true);
             break;
 
@@ -323,22 +324,27 @@ static void can_msg_handler(const can_msg_t *msg) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
-            if (act_id == ACTUATOR_AIRBRAKES_SERVO &&
-                (state == COAST ||
-                 (debug_en && debug_cmd_airbrakes_ext == get_req_actuator_state_analog(msg) &&
-                  state == PRE_FLIGHT))) {
-                cmd_airbrakes_ext = debug_cmd_airbrakes_ext;
-            } 
-            else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
-                debug_cmd_airbrakes_ext = get_req_actuator_state_analog(msg);
-#if (IS_KETO)
-                LATB0 = 0; //Keto D7
-#else
-                LATB3 = MOTOR_ON;
-#endif
-                debug_en = true;
+            float act_state = get_req_actuator_state_analog(msg);
+            
+            if(act_state == -1.0) break; //invalid message field or message type
+            if(act_state > 1.0) act_state = 1.0; //bounds checking
+            if(act_state < 0.0) act_state = 0.0;
+            
+            if (act_id == ACTUATOR_AIRBRAKES_SERVO) {
+                if(state == COAST || (debug_en && debug_cmd_airbrakes_ext == act_state && state == PRE_FLIGHT))
+                {
+                    airbrakes_act_time = millis();
+                    cmd_airbrakes_ext = act_state;
+                    MOTOR_POWER = MOTOR_ON;
+                }
             }
             
+            else if (act_id == ACTUATOR_AIRBRAKES_ENABLE) {
+                debug_cmd_airbrakes_ext = act_state;
+                debug_en = true;
+            }
+             break;
+             
             //Payload servo command logic
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
         case MSG_ACT_ANALOG_CMD:
@@ -346,10 +352,12 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
                 cmd_payload_rpm = get_req_actuator_state_analog(msg);
             }
-#endif
+            break;
+#endif     
         // all the other ones - do nothing
         default:
             break;
+        
     }
 }
 
@@ -383,7 +391,7 @@ static void __interrupt() interrupt_handler(void) {
 //Motor control functions
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 void actuate_airbrakes(float extension) {
-    pwm_set_duty_cycle( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / (PWM_PERIOD / 100) );
+    pwm_set_pulse_width( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / 10);
     if (debug_en) {
         debug_en = false;
         airbrakes_act_time = millis();
