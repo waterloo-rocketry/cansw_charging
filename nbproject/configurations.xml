@@ -124,7 +124,7 @@
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
         <property key="define-macros"
-                  value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING_AIRBRAKE;ROCKETLIB_PWM_PIN=LATB5;IS_KETO=0"/>
+                  value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING_AIRBRAKE;ROCKETLIB_PWM_PIN=LATB1;IS_KETO=1"/>
         <property key="disable-optimizations" value="true"/>
         <property key="extra-include-directories"
                   value="canlib;mcc_generated_files;rocketlib/include"/>

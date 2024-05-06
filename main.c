@@ -174,6 +174,7 @@ int main(void) {
                 millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
 #endif
+            bool result;
             // Battery charging current
             can_msg_t curr_msg_chg; // charging current going into lipo
             build_analog_data_msg(
@@ -181,19 +182,19 @@ int main(void) {
                 SENSOR_CHARGE_CURR,
                 (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR),
                 &curr_msg_chg);
-            txb_enqueue(&curr_msg_chg);
+            result = txb_enqueue(&curr_msg_chg);
 
             can_msg_t curr_msg_batt; // current draw from lipo
             build_analog_data_msg(
                 millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
-            txb_enqueue(&curr_msg_batt);
+            result = txb_enqueue(&curr_msg_batt);
 
             // measure motor current            
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             can_msg_t curr_msg_motor;
             build_analog_data_msg(
                 millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
-            txb_enqueue(&curr_msg_motor);
+            result = txb_enqueue(&curr_msg_motor);
 #endif
             // Voltage health
             can_msg_t batt_volt_msg; // lipo battery voltage
@@ -202,14 +203,14 @@ int main(void) {
                 SENSOR_BATT_VOLT,
                 (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
                 &batt_volt_msg);
-            txb_enqueue(&batt_volt_msg);
+            result = txb_enqueue(&batt_volt_msg);
 
             can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(millis(),
                 SENSOR_GROUND_VOLT,
                 (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER),
                 &ground_volt_msg);
-            txb_enqueue(&ground_volt_msg);
+            result = txb_enqueue(&ground_volt_msg);
         }
         // send any queued CAN messages
         txb_heartbeat();

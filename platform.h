@@ -5,11 +5,11 @@
 #include <stdint.h>
 
 // Time between main loop code execution
-#define MAX_LOOP_TIME_DIFF_ms 250
+#define MAX_LOOP_TIME_DIFF_ms 500
 // Time between "high speed" sensor checks
 #define MAX_SENSOR_LOOP_TIME_DIFF_ms 25
 // Reset if we go this long without seeing any CAN messages (including our own)
-#define MAX_BUS_DEAD_TIME_ms 1000
+#define MAX_BUS_DEAD_TIME_ms 10000
 
 // Voltage monitoring in 100k Ohms
 #define BATT_RESISTANCE_DIVIDER 3.2
