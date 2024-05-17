@@ -22,7 +22,7 @@
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 void actuate_airbrakes(float extension);
-extern void timer2_handle_interrupt(void);
+//extern void timer2_handle_interrupt(void);
 void pwm_init(void);
 
 // memory pool for the CAN tx buffer
@@ -381,7 +381,7 @@ static void __interrupt() interrupt_handler(void) {
     // Timer2 has overflowed
     // This happens approximately every 100us
     if (PIE4bits.TMR2IE == 1 && PIR4bits.TMR2IF == 1) {
-        timer2_handle_interrupt();
+        //timer2_handle_interrupt();
         PIR4bits.TMR2IF = 0;
     }
 }
@@ -425,7 +425,6 @@ void pwm_init(void)
     //19 -> 00000100:11 (8bit * 4 + 2bit)
     PWM5DCH = 4;
     PWM5DCLbits.DC = 3;
-    return;
     
     //5. Initialize timer
     
@@ -448,5 +447,5 @@ void pwm_init(void)
     
     PWM5CONbits.POL = 0; //set to non-inverting
     
-    
+    return;
 }
