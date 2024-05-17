@@ -410,11 +410,11 @@ void actuate_payload(float extension) {
 void pwm_init(void)
 {
     
-    //1. Disable PWMx by setting TRIS bit
+    //1. Disable PWMx by setting TRISx
     TRISB0 = 1; // motor PWM output (visualized on D6)
     
     //2. Clear PWMxCON
-    RB0PPS = PWM5OUT; //map PWM5OUT to B0
+   
     PWM5CON = 0;
     
     //3. Load T2PR with period
@@ -427,7 +427,26 @@ void pwm_init(void)
     PWM5DCLbits.DC = 3;
     return;
     
-    //5. Initialize Timer 2
+    //5. Initialize timer
     
-    //still TBA
+    PIR4bits.TMR2IF = 0;
+    T2CLK = 1; //selects Fosc/4 (pg 321)
+    T2CONbits.CKPS = 128; //prescale of 128
+    T2CONbits.ON = 1; //enables timer
+    
+    //6. Enable PWM output and wait for timer overflow, TMRxIF of PIR is set
+    
+    PWM5CONbits.EN = 1;
+    while (PIR4bits.TMR2IF == 0)
+    {}
+    
+    //7. Enable PWM pin output drivers
+    TRISB0 = 0;
+    RB0PPS = PWM5OUT; //map PWM5OUT to B0
+    
+    //8. Load appropriate values to PWMxCON
+    
+    PWM5CONbits.POL = 0; //set to non-inverting
+    
+    
 }
