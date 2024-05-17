@@ -65,8 +65,7 @@ void pin_init(void) {
     TRISB0 = 0; // motor power enable (visualized on D7)
     LATB0 = 1; // start with motor disabled
     
-    TRISB1 = 0; // motor PWM output (visualized on D6)
-    LATB1 = 1;
+    //motor PWM setup in main.c under pwm_init
 #endif
 }
 
@@ -146,9 +145,6 @@ void pin_init(void) {
     TRISB3 = 0; // allow motor to be toggled
     
     TRISB5 = 0; // set motor input to be output
-    
-    TRISB4 = 1; // set motor output to be input
-    ANSELB4 = 1; // enable analog reading
     
     TRISB2 = 1; // set motor current draw (battery/5V) to be input
     ANSELB2 = 1; // enable analog reading

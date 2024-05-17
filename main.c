@@ -8,11 +8,10 @@
 #include "device_config.h"
 #include "error_checks.h"
 #include "platform.h"
-#include "pwm.h"
 
 #if (IS_KETO)
-#define MOTOR_POWER LATB0 //Keto D7
-#define MOTOR_PWM LATB1 //Keto D6
+#define MOTOR_POWER LATB1 //Keto D7
+#define MOTOR_PWM LATB0 //Keto D6
 #define MOTOR_ON 0
 #else
 #define MOTOR_POWER LATB3
@@ -24,6 +23,7 @@ static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 void actuate_airbrakes(float extension);
 extern void timer2_handle_interrupt(void);
+void pwm_init(void);
 
 // memory pool for the CAN tx buffer
 uint8_t tx_pool[100];
@@ -103,9 +103,6 @@ int main(void) {
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     // set up PWM
-    pwm_init(PWM_PERIOD); //need to use 1000 for now
-    pwm_enable();
-    pwm_set_pulse_width( (uint16_t) PERCENT_TO_PULSEWIDTH(0) / 10);
 #endif
 
     // loop timer
@@ -392,7 +389,7 @@ static void __interrupt() interrupt_handler(void) {
 //Motor control functions
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 void actuate_airbrakes(float extension) {
-    pwm_set_pulse_width( (uint16_t) PERCENT_TO_PULSEWIDTH(extension) / 10);
+    
     if (debug_en) {
         debug_en = false;
         airbrakes_act_time = millis();
@@ -409,3 +406,28 @@ void actuate_payload(float extension) {
     // do another thing (write a value via PWM to B5)
 }
 #endif
+
+void pwm_init(void)
+{
+    
+    //1. Disable PWMx by setting TRIS bit
+    TRISB0 = 1; // motor PWM output (visualized on D6)
+    
+    //2. Clear PWMxCON
+    RB0PPS = PWM5OUT; //map PWM5OUT to B0
+    PWM5CON = 0;
+    
+    //3. Load T2PR with period
+    T2PR = 252; //initialize with 2700us -> 252.13 with a prescale of 128 (rounds to 252)
+    
+    //4. Load PWMxDCH and PWMxDCL<7:6> with duty cycle
+    //Loading min pulse width (50us) needs 18.75 in 10-bit combined register (rounds to 19) 
+    //19 -> 00000100:11 (8bit * 4 + 2bit)
+    PWM5DCH = 4;
+    PWM5DCLbits.DC = 3;
+    return;
+    
+    //5. Initialize Timer 2
+    
+    //still TBA
+}
