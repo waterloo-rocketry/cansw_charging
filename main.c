@@ -451,7 +451,7 @@ void pwm_init(void)
 }
 
 //function to take %extension and turn into bits to write to PWMxDCH and PWMxDCL
-/*
+
 void updatePulseWidth(float percent)
 {
     uint16_t pulseWidth = uint16_t(percent * 4 * (T2PR + 1));
@@ -459,4 +459,4 @@ void updatePulseWidth(float percent)
     PWM5DCLbits.DC = pulseWidth & 0x03;
     return;
 }
-*/
+
