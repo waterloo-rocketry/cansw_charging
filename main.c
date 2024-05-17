@@ -61,7 +61,7 @@ const float MOTOR_MAX_EXT_DEG = 180.0;
 const uint16_t AB_MIN_EXT_DEG = 0; //under this the servo will stall - 20 deg
 const uint16_t AB_MAX_EXT_DEG = 180; //over this the servo will stall -  140 deg
 const uint16_t PWM_PERIOD = 500; // 1000*10us = 10ms period - 50us at 0.5% DC, 2500us at 25% DC
-
+void updatePulseWidth(float percent);
 #define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
 #define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
 #define PERCENT_TO_PULSEWIDTH(percent) ( DEG_TO_PULSEWIDTH(PERCENT_TO_DEG(percent)) )
@@ -449,3 +449,14 @@ void pwm_init(void)
     
     return;
 }
+
+//function to take %extension and turn into bits to write to PWMxDCH and PWMxDCL
+/*
+void updatePulseWidth(float percent)
+{
+    uint16_t pulseWidth = uint16_t(percent * 4 * (T2PR + 1));
+    PWM5DCH = (pulseWidth >> 2) & 0xff;
+    PWM5DCLbits.DC = pulseWidth & 0x03;
+    return;
+}
+*/
