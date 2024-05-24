@@ -14,7 +14,6 @@
             <make-dep-projects/>
             <sourceRootList>
                 <sourceRootElem>canlib</sourceRootElem>
-                <sourceRootElem>rocketlib/pic18f26k83</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
@@ -26,8 +25,5 @@
                 <project-formatting-style>false</project-formatting-style>
             </formatting>
         </data>
-        <spellchecker-wordlist xmlns="http://www.netbeans.org/ns/spellchecker-wordlist/1">
-            <word>Airbrakes</word>
-        </spellchecker-wordlist>
     </configuration>
 </project>

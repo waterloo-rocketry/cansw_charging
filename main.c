@@ -8,6 +8,7 @@
 #include "device_config.h"
 #include "error_checks.h"
 #include "platform.h"
+#include "stdint.h"
 
 #if (IS_KETO)
 #define MOTOR_POWER LATB1 //Keto D7
@@ -77,6 +78,7 @@ int main(void) {
     // initialize mcc functions
     ADCC_Initialize();
     FVR_Initialize();
+    
 
     pin_init(); // init pins
     oscillator_init(); // init the external oscillator
@@ -102,7 +104,7 @@ int main(void) {
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-    // set up PWM
+    pwm_init();
 #endif
 
     // loop timer
@@ -136,7 +138,7 @@ int main(void) {
             last_millis = millis();
 
             // visual heartbeat indicator
-            WHITE_LED_SET(heartbeat);
+//            WHITE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
 
             // check for general board status
@@ -224,6 +226,7 @@ int main(void) {
             MOTOR_POWER = MOTOR_ON;
         }
         
+        
         //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
         if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
             state = DESCENT;
@@ -307,6 +310,7 @@ static void can_msg_handler(const can_msg_t *msg) {
 
         case MSG_LEDS_OFF:
             RED_LED_SET(false);
+            
             BLUE_LED_SET(false);
             WHITE_LED_SET(false);
             break;
@@ -407,31 +411,76 @@ void actuate_payload(float extension) {
 }
 #endif
 
+
+void pwm_init(void){
+//1. Use the desired output pin RxyPPS control to select CCPx as the source and 
+//   disable the CCPx pin output driver by setting the associated TRIS bit.
+    RB5PPS = 0b001011;
+    TRISB5 = 1;
+    
+//2. Load the T2PR register with the PWM period value.
+    T2PR = 251;
+
+//3. Configure the CCP module for the PWM mode by loading the CCPxCON register with the appropriate values.
+    CCP3CONbits.EN = 0b1; // enable CCP3
+    CCP3CONbits.FMT = 0b0; // Set to left-aligned
+    CCP3CONbits.MODE = 0b1100; // set to PWM operation
+    
+
+//4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
+//to set the proper register alignment.
+    CCPR3H = 0b00000000;
+    CCPR3L = 0b10111100;
+    
+
+    
+//5. Configure and start Timer2:
+    //- Clear the TMR2IF interrupt flag bit of the respective PIR register. See Note below.
+    PIR4bits.TMR2IF = 0;
+    //- Select the timer clock source to be as FOSC/4 using the T2CLK register. 
+    T2CLK = 0b0001; //(pg 321)
+    //- Configure the CKPS bits of the T2CON register with the Timer prescale value.
+    T2CONbits.CKPS = 0b111; //prescale of 128
+    //- Enable the Timer by setting the ON bit of the T2CON register.
+    T2CONbits.ON = 1; //enables timer
+    CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
+    
+//6. Enable PWM output pin:
+    //- Wait until the Timer overflows and the TMR2IF bit of the PIR4 register is set. See Note below.
+    while (PIR4bits.TMR2IF == 0)
+    {}
+    //- Enable the CCPx pin output driver by clearing the associated TRIS bit.
+    TRISB5 = 0;
+}
+
+
+/*
 void pwm_init(void)
 {
     
     //1. Disable PWMx by setting TRISx
-    TRISB0 = 1; // motor PWM output (visualized on D6)
+    TRISB5 = 1; // motor PWM output (visualized on D6) //this would have set D7??? 
     
     //2. Clear PWMxCON
    
     PWM5CON = 0;
     
     //3. Load T2PR with period
-    T2PR = 252; //initialize with 2700us -> 252.13 with a prescale of 128 (rounds to 252)
+    T2PR = 251; //initialize with 2700us -> 252.13 with a prescale of 128 (rounds to 252)
     
-    //4. Load PWMxDCH and PWMxDCL<7:6> with duty cycle
-    //Loading min pulse width (50us) needs 18.75 in 10-bit combined register (rounds to 19) 
-    //19 -> 00000100:11 (8bit * 4 + 2bit)
-    PWM5DCH = 4;
-    PWM5DCLbits.DC = 3;
+    //4. Load PWMxDCH and PWMxDCL<7:6> with duty cycle (ben says 2.5ms)
+    //Loading min pulse width (500us) needs 187.5 in 10-bit combined register (rounds to 188) 
+    //19 -> 00101111:00 (8bit * 4 + 2bit)
+    PWM5DCH = 0b00101111;
+    PWM5DCLbits.DC = 0b00;
     
     //5. Initialize timer
     
     PIR4bits.TMR2IF = 0;
-    T2CLK = 1; //selects Fosc/4 (pg 321)
-    T2CONbits.CKPS = 128; //prescale of 128
+    T2CLK = 0b0001; //selects Fosc/4 (pg 321)
+    T2CONbits.CKPS = 0b111; //prescale of 128
     T2CONbits.ON = 1; //enables timer
+    CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
     
     //6. Enable PWM output and wait for timer overflow, TMRxIF of PIR is set
     
@@ -440,21 +489,22 @@ void pwm_init(void)
     {}
     
     //7. Enable PWM pin output drivers
-    TRISB0 = 0;
-    RB0PPS = PWM5OUT; //map PWM5OUT to B0
+    TRISB5 = 0;
+    RB5PPS = PWM5OUT; //map PWM5OUT to B5
     
     //8. Load appropriate values to PWMxCON
     
-    PWM5CONbits.POL = 0; //set to non-inverting
+    PWM5CONbits.POL = 1; //set to non-inverting
     
     return;
 }
+ */
 
 //function to take %extension and turn into bits to write to PWMxDCH and PWMxDCL
 
 void updatePulseWidth(float percent)
 {
-    uint16_t pulseWidth = uint16_t(percent * 4 * (T2PR + 1));
+    uint16_t pulseWidth = (uint16_t)(percent * 4 * (T2PR + 1));
     PWM5DCH = (pulseWidth >> 2) & 0xff;
     PWM5DCLbits.DC = pulseWidth & 0x03;
     return;
