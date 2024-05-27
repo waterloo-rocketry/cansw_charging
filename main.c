@@ -104,6 +104,7 @@ int main(void) {
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+    LATB3 = 1;
     pwm_init();
 #endif
 
@@ -138,7 +139,7 @@ int main(void) {
             last_millis = millis();
 
             // visual heartbeat indicator
-//            WHITE_LED_SET(heartbeat);
+            WHITE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
 
             // check for general board status
@@ -429,8 +430,16 @@ void pwm_init(void){
 
 //4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
 //to set the proper register alignment.
-    CCPR3H = 0b00000000;
-    CCPR3L = 0b10111100;
+    //for 500us
+//  CCPR3H = 0b00000000;
+//  CCPR3L = 0b10111100;
+    //for 1.5 ms
+    //CCPR3H = 0b00000010;
+    //CCPR3L = 0b00110011;
+    //for 2.5 ms
+    CCPR3H = 0b00000011;
+    CCPR3L = 0b10101010;
+    
     
 
     
@@ -510,13 +519,13 @@ void updatePulseWidth(float percent)
     return;
 }
  */
-void updatePulseWidth(float percent)
-{
-    uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
-    uint16_t bitWrite = pulseWidth_us * 48 / 128 //48 is Fosc in MHz, 128 is prescaler
-    //write PW/(Tosc * prescale value)
-    CCPR3H = (bitWrite >> 8);
-    CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator
-    
-}
+//void updatePulseWidth(float percent)
+//{
+//    uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+//    uint16_t bitWrite = pulseWidth_us * 48 / 128 //48 is Fosc in MHz, 128 is prescaler
+//    //write PW/(Tosc * pre```````                     `scale value)
+//    CCPR3H = (bitWrite >> 8);
+//    CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator
+//    
+//}
 
