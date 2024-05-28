@@ -103,10 +103,10 @@ int main(void) {
     // set up CAN tx buffer
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-    LATB3 = 1;
-    pwm_init();
-#endif
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+        LATB3 = 1;
+        pwm_init();
+    #endif
 
     // loop timer
     uint32_t last_millis = 0;
@@ -116,8 +116,8 @@ int main(void) {
     bool heartbeat = false;
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
-        RED_LED_SET(state == BOOST); //Keto stuff
-        BLUE_LED_SET(state == COAST); 
+        //RED_LED_SET(state == BOOST); //Keto stuff
+        //BLUE_LED_SET(state == COAST);
         if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
             oscillator_init();
         }
@@ -141,21 +141,24 @@ int main(void) {
             // visual heartbeat indicator
             WHITE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
+            
+            //power on/off indicator
+            BLUE_LED_SET(LATB3 == 1);
 
             // check for general board status
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
             status_ok &= check_battery_current_error();
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_5v_current_error();
             status_ok &= check_13v_current_error();
-#endif
+        #endif
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
             }
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             /*            // Current draws
                         can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
                                                 // groundside or lipo battery)
@@ -173,45 +176,52 @@ int main(void) {
             build_analog_data_msg(
                 millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
-#endif
-            bool result;
-            // Battery charging current
-            can_msg_t curr_msg_chg; // charging current going into lipo
-            build_analog_data_msg(
-                millis(),
-                SENSOR_CHARGE_CURR,
-                (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR),
-                &curr_msg_chg);
-            result = txb_enqueue(&curr_msg_chg);
+        #endif
+        bool result;
+        // Battery charging current
+        can_msg_t curr_msg_chg; // charging current going into lipo
+        build_analog_data_msg(
+            millis(),
+            SENSOR_CHARGE_CURR,
+            (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR), 
+            &curr_msg_chg
+        );
+        
+        result = txb_enqueue(&curr_msg_chg);
 
-            can_msg_t curr_msg_batt; // current draw from lipo
-            build_analog_data_msg(
+        can_msg_t curr_msg_batt; // current draw from lipo
+        build_analog_data_msg(
                 millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
-            result = txb_enqueue(&curr_msg_batt);
+        result = txb_enqueue(&curr_msg_batt);
 
-            // measure motor current            
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+        // measure motor current            
+        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             can_msg_t curr_msg_motor;
             build_analog_data_msg(
-                millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
+                    millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
             result = txb_enqueue(&curr_msg_motor);
-#endif
-            // Voltage health
-            can_msg_t batt_volt_msg; // lipo battery voltage
+        #endif
+        
+        // Voltage health
+        can_msg_t batt_volt_msg; // lipo battery voltage
+        build_analog_data_msg(
+            millis(),
+            SENSOR_BATT_VOLT,
+            (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
+            &batt_volt_msg
+        );
+        result = txb_enqueue(&batt_volt_msg);
+
+        can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
                 millis(),
-                SENSOR_BATT_VOLT,
-                (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
-                &batt_volt_msg);
-            result = txb_enqueue(&batt_volt_msg);
-
-            can_msg_t ground_volt_msg; // groundside battery voltage
-            build_analog_data_msg(millis(),
                 SENSOR_GROUND_VOLT,
                 (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER),
-                &ground_volt_msg);
+                &ground_volt_msg
+            );
             result = txb_enqueue(&ground_volt_msg);
         }
+        
         // send any queued CAN messages
         txb_heartbeat();
 
@@ -220,36 +230,37 @@ int main(void) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
         }
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-        // state transition from boost to coast, enable motor
-        if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
-            state = COAST;
-            MOTOR_POWER = MOTOR_ON;
-        }
+
+        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+            // state transition from boost to coast, enable motor
+            if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
+                state = COAST;
+                MOTOR_POWER = MOTOR_ON;
+            }
         
         
-        //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
-        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
-            state = DESCENT;
+            //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
+            if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
+                state = DESCENT;
             
-            MOTOR_POWER = MOTOR_ON;
-            cmd_airbrakes_ext = 0;
-            airbrakes_act_time = millis();
-        }
+                MOTOR_POWER = MOTOR_ON;
+                cmd_airbrakes_ext = 0;
+                airbrakes_act_time = millis();
+            }
         
-        //If we are on the ground or in descent, cut motor power after a certain period of time
-        if ((state == PRE_FLIGHT || state == DESCENT) 
+            //If we are on the ground or in descent, cut motor power after a certain period of time
+            if ((state == PRE_FLIGHT || state == DESCENT) 
                 && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
-            MOTOR_POWER = !MOTOR_ON;
-            cmd_airbrakes_ext = 0;
-        }
+                MOTOR_POWER = !MOTOR_ON;
+                cmd_airbrakes_ext = 0;
+            }
         
-        if (cmd_airbrakes_ext != curr_airbrakes_ext) {
-            actuate_airbrakes(cmd_airbrakes_ext);
-            curr_airbrakes_ext = cmd_airbrakes_ext;
-        }
-#endif
+            if (cmd_airbrakes_ext != curr_airbrakes_ext) {
+                actuate_airbrakes(cmd_airbrakes_ext);
+                curr_airbrakes_ext = cmd_airbrakes_ext;
+            }
+        #endif
     }
 }
 
@@ -358,6 +369,7 @@ static void can_msg_handler(const can_msg_t *msg) {
             break;
 #endif     
         // all the other ones - do nothing
+            
         default:
             break;
         
@@ -414,36 +426,37 @@ void actuate_payload(float extension) {
 
 
 void pwm_init(void){
-//1. Use the desired output pin RxyPPS control to select CCPx as the source and 
-//   disable the CCPx pin output driver by setting the associated TRIS bit.
+    //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
+    //   disable the CCPx pin output driver by setting the associated TRIS bit.
     RB5PPS = 0b001011;
     TRISB5 = 1;
     
-//2. Load the T2PR register with the PWM period value.
+    //2. Load the T2PR register with the PWM period value.
     T2PR = 251;
 
-//3. Configure the CCP module for the PWM mode by loading the CCPxCON register with the appropriate values.
+    //3. Configure the CCP module for the PWM mode by loading the CCPxCON register with the appropriate values.
     CCP3CONbits.EN = 0b1; // enable CCP3
     CCP3CONbits.FMT = 0b0; // Set to left-aligned
     CCP3CONbits.MODE = 0b1100; // set to PWM operation
     
 
-//4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
-//to set the proper register alignment.
-    //for 500us
-//  CCPR3H = 0b00000000;
-//  CCPR3L = 0b10111100;
-    //for 1.5 ms
+    //4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
+    //to set the proper register alignment.
+    
+    //for 500us (0 deg))
+    CCPR3H = 0b00000000;
+    CCPR3L = 0b10111100;
+    //for 1.5 ms (90 deg))
     //CCPR3H = 0b00000010;
     //CCPR3L = 0b00110011;
-    //for 2.5 ms
-    CCPR3H = 0b00000011;
-    CCPR3L = 0b10101010;
-    
-    
+    //for 2.4 ms (171 deg)
+    //CCPR3H = 0b00000011;
+    //CCPR3L = 0b10000100;
+    //for 2.5 ms (180 deg))
+    //CCPR3H = 0b00000011;
+    //CCPR3L = 0b10101010;
 
-    
-//5. Configure and start Timer2:
+    //5. Configure and start Timer2:
     //- Clear the TMR2IF interrupt flag bit of the respective PIR register. See Note below.
     PIR4bits.TMR2IF = 0;
     //- Select the timer clock source to be as FOSC/4 using the T2CLK register. 
@@ -454,7 +467,7 @@ void pwm_init(void){
     T2CONbits.ON = 1; //enables timer
     CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
     
-//6. Enable PWM output pin:
+    //6. Enable PWM output pin:
     //- Wait until the Timer overflows and the TMR2IF bit of the PIR4 register is set. See Note below.
     while (PIR4bits.TMR2IF == 0)
     {}
