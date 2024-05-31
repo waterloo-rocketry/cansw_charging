@@ -270,7 +270,11 @@ static void can_msg_handler(const can_msg_t *msg) {
     seen_can_message = true;
     uint16_t msg_type = get_message_type(msg);
     
-    //echo -n "m0C0,00,00,00,01,00;" > /dev/tty.usbmodem12401
+    //echo -n "m0C0,00,00,00,01,00;" > /dev/tty.usbmodem12401                   //injector valve open message
+    //echo -n "m220,00,00,00,08,00,00,80,3F;" > /dev/tty.usbmodem21401          //actuate to 1
+    //echo -n "m220,00,00,00,08,66,66,66,3F;" > /dev/tty.usbmodem21401          //actuate to 0.9
+    //echo -n "m220,00,00,00,08,00,00,00,3F;" > /dev/tty.usbmodem21401          //actuate to 0.5
+    //echo -n "m220,00,00,00,08,DC,CC,CC,3E;" > /dev/tty.usbmodem21401          //actuate to 0.4
 
     // ignore messages that were sent from this board
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
@@ -541,7 +545,7 @@ void pwm_init(void)
 void updatePulseWidth(float percent)
 {
     uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
-    uint16_t bitWrite = pulseWidth_us * 48 / 128; //48 is Fosc in MHz, 128 is prescaler
+    uint16_t bitWrite = (pulseWidth_us * 48) / 128; //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;
     CCPR3H = (bitWrite >> 8) & 0x03; //honestly not sure abt this either this is like a very rough guess but as long as the servo wiggles its fine
