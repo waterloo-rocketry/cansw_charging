@@ -40,7 +40,7 @@ enum FLIGHT_PHASE state = PRE_FLIGHT;
 //const uint32_t BOOST_LENGTH_MS = 15000; // 15000ms = 15s - CHANGE THIS
 //const uint32_t COAST_LENGTH_MS = 20000;
 const uint32_t BOOST_LENGTH_MS = 1000; // for the purposes of debugging
-const uint32_t COAST_LENGTH_MS = 200000;
+const uint32_t COAST_LENGTH_MS = 2000000;
 volatile bool debug_en = false;
 
 //Commanded extension is 0-1 as fraction of full extension
@@ -275,6 +275,7 @@ static void can_msg_handler(const can_msg_t *msg) {
     //echo -n "m220,00,00,00,08,66,66,66,3F;" > /dev/tty.usbmodem21401          //actuate to 0.9
     //echo -n "m220,00,00,00,08,00,00,00,3F;" > /dev/tty.usbmodem21401          //actuate to 0.5
     //echo -n "m220,00,00,00,08,DC,CC,CC,3E;" > /dev/tty.usbmodem21401          //actuate to 0.4
+    //echo -n "m220,00,00,00,08,00,00,00,00;" > /dev/tty.usbmodem21401          //actuate to 0.0
 
     // ignore messages that were sent from this board
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
@@ -544,7 +545,7 @@ void pwm_init(void)
  
 void updatePulseWidth(float percent)
 {
-    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + ((1-percent)*0.65) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
     uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;
