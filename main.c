@@ -544,8 +544,8 @@ void pwm_init(void)
  
 void updatePulseWidth(float percent)
 {
-    uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
-    uint16_t bitWrite = (pulseWidth_us * 48) / 128; //48 is Fosc in MHz, 128 is prescaler
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;
     CCPR3H = (bitWrite >> 8) & 0x03; //honestly not sure abt this either this is like a very rough guess but as long as the servo wiggles its fine
