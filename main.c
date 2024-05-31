@@ -1,23 +1,19 @@
 #include <xc.h>
-
 #include "canlib.h"
-
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
-
 #include "device_config.h"
 #include "error_checks.h"
 #include "platform.h"
 #include "stdint.h"
-
 #if (IS_KETO)
-#define MOTOR_POWER LATB1 //Keto D7
-#define MOTOR_PWM LATB0 //Keto D6
-#define MOTOR_ON 0
+    #define MOTOR_POWER LATB1 //Keto D7
+    #define MOTOR_PWM LATB0   //Keto D6
+    #define MOTOR_ON 0
 #else
-#define MOTOR_POWER LATB3
-#define MOTOR_PWM LATB5
-#define MOTOR_ON 1             
+    #define MOTOR_POWER LATB3
+    #define MOTOR_PWM LATB5
+    #define MOTOR_ON 1             
 #endif
 
 static void can_msg_handler(const can_msg_t *msg);
@@ -25,10 +21,8 @@ static void send_status_ok(void);
 void actuate_airbrakes(float extension);
 //extern void timer2_handle_interrupt(void);
 void pwm_init(void);
-
 // memory pool for the CAN tx buffer
 uint8_t tx_pool[100];
-
 volatile bool seen_can_message = false;
 
 // setup airbrakes variables
@@ -43,8 +37,10 @@ enum FLIGHT_PHASE {
 };
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-const uint32_t BOOST_LENGTH_MS = 10000; // 10000ms = 10s - CHANGE THIS
-const uint32_t COAST_LENGTH_MS = 20000;
+//const uint32_t BOOST_LENGTH_MS = 15000; // 15000ms = 15s - CHANGE THIS
+//const uint32_t COAST_LENGTH_MS = 20000;
+const uint32_t BOOST_LENGTH_MS = 1000; // for the purposes of debugging
+const uint32_t COAST_LENGTH_MS = 200000;
 volatile bool debug_en = false;
 
 //Commanded extension is 0-1 as fraction of full extension
@@ -104,8 +100,7 @@ int main(void) {
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-        LATB3 = 1;
-        pwm_init();
+    pwm_init();
     #endif
 
     // loop timer
@@ -143,31 +138,36 @@ int main(void) {
             heartbeat = !heartbeat;
             
             //power on/off indicator
-            BLUE_LED_SET(LATB3 == 1);
+            BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
 
             // check for general board status
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
             status_ok &= check_battery_current_error();
-        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_5v_current_error();
             status_ok &= check_13v_current_error();
-        #endif
+            #endif
+
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
             }
-        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-            /*            // Current draws
-                        can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
-                                                // groundside or lipo battery)
-                        // implements cansw_arming's rolling average to act as a low-pass
-                        // voltage filter
-                        build_analog_data_msg(
-                            millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
-                        txb_enqueue(&vcc_curr_msg); //COPY THIS FOR OTHER CURRENT SENSING
+            
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            /* 
+            // Current draws
+            can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
+            // groundside or lipo battery)
+            // implements cansw_arming's rolling average to act as a low-pass
+            // voltage filter
+            build_analog_data_msg(
+            millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
+            txb_enqueue(&vcc_curr_msg); //COPY THIS FOR OTHER CURRENT SENSING
             */
+            
             can_msg_t curr_msg_5v; // measures current going into CAN 5V
             build_analog_data_msg(millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(), &curr_msg_5v);
             txb_enqueue(&curr_msg_5v);
@@ -176,43 +176,42 @@ int main(void) {
             build_analog_data_msg(
                 millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
-        #endif
-        bool result;
-        // Battery charging current
-        can_msg_t curr_msg_chg; // charging current going into lipo
-        build_analog_data_msg(
-            millis(),
-            SENSOR_CHARGE_CURR,
-            (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR), 
-            &curr_msg_chg
-        );
-        
-        result = txb_enqueue(&curr_msg_chg);
+            #endif
 
-        can_msg_t curr_msg_batt; // current draw from lipo
-        build_analog_data_msg(
-                millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
-        result = txb_enqueue(&curr_msg_batt);
-
-        // measure motor current            
-        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-            can_msg_t curr_msg_motor;
+            bool result;
+            // Battery charging current
+            can_msg_t curr_msg_chg; // charging current going into lipo
             build_analog_data_msg(
-                    millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
-            result = txb_enqueue(&curr_msg_motor);
-        #endif
-        
-        // Voltage health
-        can_msg_t batt_volt_msg; // lipo battery voltage
-        build_analog_data_msg(
-            millis(),
-            SENSOR_BATT_VOLT,
-            (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
-            &batt_volt_msg
-        );
-        result = txb_enqueue(&batt_volt_msg);
+                millis(),
+                SENSOR_CHARGE_CURR,
+                (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR), 
+                &curr_msg_chg
+            );
+            result = txb_enqueue(&curr_msg_chg);
 
-        can_msg_t ground_volt_msg; // groundside battery voltage
+            can_msg_t curr_msg_batt; // current draw from lipo
+            build_analog_data_msg(
+                millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
+            result = txb_enqueue(&curr_msg_batt);
+
+            // measure motor current            
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+            can_msg_t curr_msg_motor;
+            build_analog_data_msg(millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
+            result = txb_enqueue(&curr_msg_motor);
+            #endif
+        
+            // Voltage health
+            can_msg_t batt_volt_msg; // lipo battery voltage
+            build_analog_data_msg(
+                millis(),
+                SENSOR_BATT_VOLT,
+                (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
+                &batt_volt_msg
+            );
+            result = txb_enqueue(&batt_volt_msg);
+
+            can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
                 millis(),
                 SENSOR_GROUND_VOLT,
@@ -220,7 +219,7 @@ int main(void) {
                 &ground_volt_msg
             );
             result = txb_enqueue(&ground_volt_msg);
-        }
+        }//ended here
         
         // send any queued CAN messages
         txb_heartbeat();
@@ -255,10 +254,13 @@ int main(void) {
                 MOTOR_POWER = !MOTOR_ON;
                 cmd_airbrakes_ext = 0;
             }
-        
+            
+            //test code: run pwm command
+            //pwm_init();
             if (cmd_airbrakes_ext != curr_airbrakes_ext) {
                 actuate_airbrakes(cmd_airbrakes_ext);
                 curr_airbrakes_ext = cmd_airbrakes_ext;
+                updatePulseWidth(cmd_airbrakes_ext);
             }
         #endif
     }
@@ -267,15 +269,19 @@ int main(void) {
 static void can_msg_handler(const can_msg_t *msg) {
     seen_can_message = true;
     uint16_t msg_type = get_message_type(msg);
+    
+    //echo -n "m0C0,00,00,00,01,00;" > /dev/tty.usbmodem12401
 
     // ignore messages that were sent from this board
-    if (get_board_unique_id(msg) == BOARD_UNIQUE_ID) {
+    if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
         return;
     }
+    //RED_LED_SET(true);
 
     int act_id;
     int act_state;
     int dest_id;
+    int percent_act;
     switch (msg_type) {
         case MSG_ACTUATOR_CMD: // this will toggle *all* battery chargers, not just CHARGING_CAN
             act_id = get_actuator_id(msg);
@@ -285,15 +291,15 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
-                    BLUE_LED_SET(true);
+                    //BLUE_LED_SET(true); //temporarily commented out
                 } else if (act_state == ACTUATOR_OFF) {
                     BATTERY_CHARGER_EN(false);
-                    BLUE_LED_SET(false);
+                    //BLUE_LED_SET(false); //temporarily bye
                 }
             }
             
             //RocketCAN 5V Line On/Off
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
                     // CAN_5V_SET(true);
@@ -322,7 +328,6 @@ static void can_msg_handler(const can_msg_t *msg) {
 
         case MSG_LEDS_OFF:
             RED_LED_SET(false);
-            
             BLUE_LED_SET(false);
             WHITE_LED_SET(false);
             break;
@@ -350,6 +355,7 @@ static void can_msg_handler(const can_msg_t *msg) {
                     airbrakes_act_time = millis();
                     cmd_airbrakes_ext = act_state;
                     MOTOR_POWER = MOTOR_ON;
+                    updatePulseWidth(act_state);
                 }
             }
             
@@ -436,14 +442,14 @@ void pwm_init(void){
 
     //3. Configure the CCP module for the PWM mode by loading the CCPxCON register with the appropriate values.
     CCP3CONbits.EN = 0b1; // enable CCP3
-    CCP3CONbits.FMT = 0b0; // Set to left-aligned
+    CCP3CONbits.FMT = 0b0; // Set to right-aligned
     CCP3CONbits.MODE = 0b1100; // set to PWM operation
     
 
     //4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
     //to set the proper register alignment.
     
-    //for 500us (0 deg))
+    //for 500us (0 deg)
     CCPR3H = 0b00000000;
     CCPR3L = 0b10111100;
     //for 1.5 ms (90 deg))
@@ -465,7 +471,7 @@ void pwm_init(void){
     T2CONbits.CKPS = 0b111; //prescale of 128
     //- Enable the Timer by setting the ON bit of the T2CON register.
     T2CONbits.ON = 1; //enables timer
-    CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
+    //CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
     
     //6. Enable PWM output pin:
     //- Wait until the Timer overflows and the TMR2IF bit of the PIR4 register is set. See Note below.
@@ -523,22 +529,23 @@ void pwm_init(void)
  */
 
 //function to take %extension and turn into bits to write to PWMxDCH and PWMxDCL
-/*
-void updatePulseWidth(float percent)
-{
-    uint16_t pulseWidth = (uint16_t)(percent * 4 * (T2PR + 1));
-    PWM5DCH = (pulseWidth >> 2) & 0xff;
-    PWM5DCLbits.DC = pulseWidth & 0x03;
-    return;
-}
- */
+
 //void updatePulseWidth(float percent)
 //{
-//    uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
-//    uint16_t bitWrite = pulseWidth_us * 48 / 128 //48 is Fosc in MHz, 128 is prescaler
-//    //write PW/(Tosc * pre```````                     `scale value)
-//    CCPR3H = (bitWrite >> 8);
-//    CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator
-//    
+//    uint16_t pulseWidth = (uint16_t)(percent * 4 * (T2PR + 1));
+//    PWM5DCH = (pulseWidth >> 2) & 0xff;
+//    PWM5DCLbits.DC = pulseWidth & 0x03;
+//    return;
 //}
+ 
+void updatePulseWidth(float percent)
+{
+    uint16_t pulseWidth_us = (uint16_t) (MOTOR_MIN_PULSE_WIDTH_US + percent * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint16_t bitWrite = pulseWidth_us * 48 / 128; //48 is Fosc in MHz, 128 is prescaler
+    //write PW/(Tosc * prescale value)
+    CCPR3L = bitWrite & 0xFF;
+    CCPR3H = (bitWrite >> 8) & 0x03; //honestly not sure abt this either this is like a very rough guess but as long as the servo wiggles its fine
+    //CCPR3H = (bitWrite >> 8);
+    //CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator //help this is really funny
+}
 
