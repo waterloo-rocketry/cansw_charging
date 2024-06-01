@@ -97,8 +97,8 @@ void ADCC_Initialize(void)
     ADCON3 = 0x00;
     // ADMATH registers not updated; 
     ADSTAT = 0x00;
-    // ADNREF VSS; ADPREF FVR; 
-    ADREF = 0x03;
+    // ADNREF VSS; ADPREF VDD; 
+    ADREF = 0x00;
     // ADACT disabled; 
     ADACT = 0x00;
     // ADCS FOSC/100; 

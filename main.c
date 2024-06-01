@@ -202,14 +202,8 @@ int main(void) {
             #endif
         
             // Voltage health
-            can_msg_t batt_volt_msg; // lipo battery voltage
-            build_analog_data_msg(
-                millis(),
-                SENSOR_BATT_VOLT,
-                (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
-                &batt_volt_msg
-            );
-            result = txb_enqueue(&batt_volt_msg);
+            
+            //battery voltage msg is constructed in check_battery_voltage_error if no error
 
             can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
@@ -228,6 +222,12 @@ int main(void) {
         if (millis() - sensor_last_millis > MAX_SENSOR_LOOP_TIME_DIFF_ms) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+            update_motor_curr_low_pass();
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            update_5v_curr_low_pass();
+            update_13v_curr_low_pass();
+#endif            
         }
 
         #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
@@ -404,13 +404,6 @@ static void __interrupt() interrupt_handler(void) {
     if (PIE3bits.TMR0IE == 1 && PIR3bits.TMR0IF == 1) {
         timer0_handle_interrupt();
         PIR3bits.TMR0IF = 0;
-    }
-
-    // Timer2 has overflowed
-    // This happens approximately every 100us
-    if (PIE4bits.TMR2IE == 1 && PIR4bits.TMR2IF == 1) {
-        //timer2_handle_interrupt();
-        PIR4bits.TMR2IF = 0;
     }
 }
 
