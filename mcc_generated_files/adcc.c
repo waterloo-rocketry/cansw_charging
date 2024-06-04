@@ -105,12 +105,22 @@ void ADCC_Initialize(void)
     ADCLK = 0x31;
     // ADGO stop; ADFM right; ADON enabled; ADCS FOSC/ADCLK; ADCONT disabled; 
     ADCON0 = 0x84;
+    
+    
 }
 
 void ADCC_StartConversion(adcc_channel_t channel)
 {
     // select the A/D channel
     ADPCH = channel;      
+    
+    ADCON0bits.FM = 1; //right justify
+    ADCON0bits.CS = 1; //FRC Clock
+    
+    //ADPCH = 0x00; //RA0 is Analog channel
+    
+    TRISAbits.TRISA0 = 1; //Set RA0 to input
+    ANSELAbits.ANSELA0 = 1; //Set RA0 to analog
   
     // Turn on the ADC module
     ADCON0bits.ADON = 1;
@@ -128,6 +138,7 @@ bool ADCC_IsConversionDone()
 adc_result_t ADCC_GetConversionResult(void)
 {
     // Return the result
+    uint16_t dead = ((adc_result_t)((ADRESH << 8) + ADRESL));
     return ((adc_result_t)((ADRESH << 8) + ADRESL));
 }
 
@@ -150,7 +161,7 @@ adc_result_t ADCC_GetSingleConversion(adcc_channel_t channel)
     while (ADCON0bits.ADGO)
     {
     }
-    
+    volatile uint16_t dead = ((adc_result_t)((ADRESH << 8) + ADRESL));
     
     // Conversion finished, return the result
     return ((adc_result_t)((ADRESH << 8) + ADRESL));
