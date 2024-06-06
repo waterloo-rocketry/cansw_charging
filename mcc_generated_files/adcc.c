@@ -58,6 +58,66 @@
   Section: ADCC Module APIs
 */
 
+/**
+  ADCC Generated Driver File
+
+  @Company
+    Microchip Technology Inc.
+
+  @File Name
+    adcc.c
+
+  @Summary
+    This is the generated driver implementation file for the ADCC driver using PIC10 / PIC12 / PIC16 / PIC18 MCUs
+
+  @Description
+    This source file provides implementations for driver APIs for ADCC.
+    Generation Information :
+        Product Revision  :  PIC10 / PIC12 / PIC16 / PIC18 MCUs - 1.65.2
+        Device            :  PIC18F26K83
+        Driver Version    :  2.01
+    The generated drivers are tested against the following:
+        Compiler          :  XC8 1.45
+        MPLAB             :  MPLAB X 4.15
+*/
+
+/*
+    (c) 2018 Microchip Technology Inc. and its subsidiaries. 
+    
+    Subject to your compliance with these terms, you may use Microchip software and any 
+    derivatives exclusively with Microchip products. It is your responsibility to comply with third party 
+    license terms applicable to your use of third party software (including open source software) that 
+    may accompany Microchip software.
+    
+    THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER 
+    EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY 
+    IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS 
+    FOR A PARTICULAR PURPOSE.
+    
+    IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE, 
+    INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND 
+    WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP 
+    HAS BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO 
+    THE FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL 
+    CLAIMS IN ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT 
+    OF FEES, IF ANY, THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS 
+    SOFTWARE.
+*/
+
+/**
+  Section: Included Files
+*/
+#include <xc.h>
+#include "adcc.h"
+
+/**
+  Section: ADCC Module Variables
+*/
+
+/**
+  Section: ADCC Module APIs
+*/
+
 void ADCC_Initialize(void)
 {
     // set the ADCC to the options selected in the User Interface
@@ -97,30 +157,20 @@ void ADCC_Initialize(void)
     ADCON3 = 0x00;
     // ADMATH registers not updated; 
     ADSTAT = 0x00;
-    // ADNREF VSS; ADPREF VDD; 
-    ADREF = 0x00;
+    // ADNREF VSS; ADPREF FVR; 
+    ADREF = 0x03;
     // ADACT disabled; 
     ADACT = 0x00;
     // ADCS FOSC/100; 
     ADCLK = 0x31;
     // ADGO stop; ADFM right; ADON enabled; ADCS FOSC/ADCLK; ADCONT disabled; 
     ADCON0 = 0x84;
-    
-    
 }
 
 void ADCC_StartConversion(adcc_channel_t channel)
 {
     // select the A/D channel
     ADPCH = channel;      
-    
-    ADCON0bits.FM = 1; //right justify
-    ADCON0bits.CS = 1; //FRC Clock
-    
-    //ADPCH = 0x00; //RA0 is Analog channel
-    
-    TRISAbits.TRISA0 = 1; //Set RA0 to input
-    ANSELAbits.ANSELA0 = 1; //Set RA0 to analog
   
     // Turn on the ADC module
     ADCON0bits.ADON = 1;
@@ -138,7 +188,6 @@ bool ADCC_IsConversionDone()
 adc_result_t ADCC_GetConversionResult(void)
 {
     // Return the result
-    uint16_t dead = ((adc_result_t)((ADRESH << 8) + ADRESL));
     return ((adc_result_t)((ADRESH << 8) + ADRESL));
 }
 
@@ -161,7 +210,7 @@ adc_result_t ADCC_GetSingleConversion(adcc_channel_t channel)
     while (ADCON0bits.ADGO)
     {
     }
-    volatile uint16_t dead = ((adc_result_t)((ADRESH << 8) + ADRESL));
+    
     
     // Conversion finished, return the result
     return ((adc_result_t)((ADRESH << 8) + ADRESL));
