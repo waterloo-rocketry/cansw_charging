@@ -17,7 +17,7 @@
 // Current monitoring in units of 10 milliohms
 #define CURR_5V_RESISTOR 2.0
 #define CURR_13V_RESISTOR 1.0   
-#define CHG_CURR_RESISTOR 10.0
+#define CHG_CURR_RESISTOR 2.0
 #define CURR_BATT_RESISTOR 1.0
 #define CURR_MOTOR_RESISTOR 1.0
 

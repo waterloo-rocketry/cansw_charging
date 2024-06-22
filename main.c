@@ -109,6 +109,7 @@ int main(void) {
     uint32_t last_message_millis = millis();
 
     bool heartbeat = false;
+    BATTERY_CHARGER_EN(true); //FOR TESTING ONLY, REMOVE AFTER
     //BATTERY_CHARGER_EN(true);
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
@@ -429,7 +430,7 @@ void actuate_payload(float extension) {
 }
 #endif
 
-
+#if(BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
 void pwm_init(void){
     //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
     //   disable the CCPx pin output driver by setting the associated TRIS bit.
@@ -537,7 +538,6 @@ void pwm_init(void)
 //    return;
 //}
  
-#if(BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
 void updatePulseWidth(float percent)
 {
     uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + ((1-percent)*0.65) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
