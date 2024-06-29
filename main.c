@@ -65,6 +65,8 @@ void updatePulseWidth(float percent);
 
 //setup payload variables
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 0;
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1000; 
 const uint16_t MIN_PULSE_WIDTH_US = 0;
 const uint16_t MAX_PULSE_WIDTH_US = 1000; 
 uint16_t cmd_payload_rpm = 0; //payload is just running at one speed? make const?
@@ -99,18 +101,25 @@ int main(void) {
     // set up CAN tx buffer
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+    #if (BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
     pwm_init();
+    //for 1.5 ms (90 deg))
+    //CCPR3H = 0b00000010;
+    //CCPR3L = 0b00110011;
+    //for 2.4 ms (171 deg)
+    CCPR3H = 0b00000010;
+    CCPR3L = 0b01110011;
+    MOTOR_POWER = MOTOR_ON;
     #endif
 
     // loop timer
     uint32_t last_millis = 0;
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
+    
+    //BATTERY_CHARGER_EN(true);
 
     bool heartbeat = false;
-    BATTERY_CHARGER_EN(true); //FOR TESTING ONLY, REMOVE AFTER
-    //BATTERY_CHARGER_EN(true);
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
         //RED_LED_SET(state == BOOST); //Keto stuff
@@ -137,7 +146,7 @@ int main(void) {
 
             // visual heartbeat indicator
             WHITE_LED_SET(heartbeat);
-            //heartbeat = !heartbeat;
+            heartbeat = !heartbeat;
             
             //power on/off indicator
             BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
@@ -207,11 +216,11 @@ int main(void) {
             
             //battery voltage msg is constructed in check_battery_voltage_error if no error
 
-            can_msg_t ground_volt_msg; // thiss is actually 13V line voltage now :)
+            can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
                 millis(),
                 SENSOR_GROUND_VOLT,
-                (uint16_t)(ADCC_GetSingleConversion((channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER)),
+                (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER),
                 &ground_volt_msg
             );
             result = txb_enqueue(&ground_volt_msg);
@@ -430,7 +439,7 @@ void actuate_payload(float extension) {
 }
 #endif
 
-#if(BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
+
 void pwm_init(void){
     //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
     //   disable the CCPx pin output driver by setting the associated TRIS bit.
@@ -537,10 +546,12 @@ void pwm_init(void)
 //    PWM5DCLbits.DC = pulseWidth & 0x03;
 //    return;
 //}
+
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
  
 void updatePulseWidth(float percent)
 {
-    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + ((1-percent)*0.65) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + (1-percent) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
     uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;
@@ -548,5 +559,5 @@ void updatePulseWidth(float percent)
     //CCPR3H = (bitWrite >> 8);
     //CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator //help this is really funny
 }
-#endif
 
+#endif
