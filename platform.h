@@ -11,15 +11,19 @@
 // Reset if we go this long without seeing any CAN messages (including our own)
 #define MAX_BUS_DEAD_TIME_ms 10000
 
-// Voltage monitoring in 100k Ohms
-#define BATT_RESISTANCE_DIVIDER 3.2
-#define GROUND_RESISTANCE_DIVIDER 3.2
+// Voltage monitoring in 47k Ohms
+#define BATT_RESISTANCE_DIVIDER 5.6
+#define GROUND_RESISTANCE_DIVIDER 5.6
 // Current monitoring in units of 10 milliohms
 #define CURR_5V_RESISTOR 2.0
 #define CURR_13V_RESISTOR 1.0   
-#define CHG_CURR_RESISTOR 10.0
+#define CHG_CURR_RESISTOR 2.0
 #define CURR_BATT_RESISTOR 1.0
 #define CURR_MOTOR_RESISTOR 1.0
+
+#define VREF 4.096
+#define MAX_COUNTS 4096
+#define CONVERSION_ADC_TO_V VREF * 1000 / MAX_COUNTS
 
 void pin_init(void);
 

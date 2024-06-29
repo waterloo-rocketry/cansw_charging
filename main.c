@@ -109,6 +109,8 @@ int main(void) {
     uint32_t last_message_millis = millis();
 
     bool heartbeat = false;
+    BATTERY_CHARGER_EN(true); //FOR TESTING ONLY, REMOVE AFTER
+    //BATTERY_CHARGER_EN(true);
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
         //RED_LED_SET(state == BOOST); //Keto stuff
@@ -135,7 +137,7 @@ int main(void) {
 
             // visual heartbeat indicator
             WHITE_LED_SET(heartbeat);
-            heartbeat = !heartbeat;
+            //heartbeat = !heartbeat;
             
             //power on/off indicator
             BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
@@ -205,11 +207,11 @@ int main(void) {
             
             //battery voltage msg is constructed in check_battery_voltage_error if no error
 
-            can_msg_t ground_volt_msg; // groundside battery voltage
+            can_msg_t ground_volt_msg; // thiss is actually 13V line voltage now :)
             build_analog_data_msg(
                 millis(),
                 SENSOR_GROUND_VOLT,
-                (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER),
+                (uint16_t)(ADCC_GetSingleConversion((channel_GROUND_VOLT) * GROUND_RESISTANCE_DIVIDER)),
                 &ground_volt_msg
             );
             result = txb_enqueue(&ground_volt_msg);
@@ -428,7 +430,7 @@ void actuate_payload(float extension) {
 }
 #endif
 
-
+#if(BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
 void pwm_init(void){
     //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
     //   disable the CCPx pin output driver by setting the associated TRIS bit.
@@ -546,4 +548,5 @@ void updatePulseWidth(float percent)
     //CCPR3H = (bitWrite >> 8);
     //CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator //help this is really funny
 }
+#endif
 
