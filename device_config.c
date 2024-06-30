@@ -3,8 +3,8 @@
 #include "device_config.h"
 
 void oscillator_init(void) {
-    // Select external oscillator with PLL of 1:1
-    OSCCON1 = 0x70;
+    // Select external oscillator with 4xPLL of 1:1
+    OSCCON1 = 0x20;
     // wait until the clock switch has happened
     while (OSCCON3bits.ORDY == 0) {}
     // if the currently active clock (CON2) isn't the selected clock (CON1)
