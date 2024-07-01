@@ -282,11 +282,11 @@ static void can_msg_handler(const can_msg_t *msg) {
     uint16_t msg_type = get_message_type(msg);
     
     //echo -n "m0C0,00,00,00,01,00;" > /dev/tty.usbmodem12401                   //injector valve open message
-    //echo -n "m220,00,00,00,08,00,00,80,3F;" > /dev/tty.usbmodem21401          //actuate to 1
-    //echo -n "m220,00,00,00,08,66,66,66,3F;" > /dev/tty.usbmodem21401          //actuate to 0.9
-    //echo -n "m220,00,00,00,08,00,00,00,3F;" > /dev/tty.usbmodem21401          //actuate to 0.5
-    //echo -n "m220,00,00,00,08,DC,CC,CC,3E;" > /dev/tty.usbmodem21401          //actuate to 0.4
-    //echo -n "m220,00,00,00,08,00,00,00,00;" > /dev/tty.usbmodem21401          //actuate to 0.0
+    //echo -n "m220,00,00,00,09,00,00,80,3F;" > /dev/tty.usbmodem21401          //actuate to 1
+    //echo -n "m220,00,00,00,09,66,66,66,3F;" > /dev/tty.usbmodem21401          //actuate to 0.9
+    //echo -n "m220,00,00,00,09,00,00,00,3F;" > /dev/tty.usbmodem21401          //actuate to 0.5
+    //echo -n "m220,00,00,00,09,DC,CC,CC,3E;" > /dev/tty.usbmodem21401          //actuate to 0.4
+    //echo -n "m220,00,00,00,09,00,00,00,00;" > /dev/tty.usbmodem21401          //actuate to 0.0
 
     // ignore messages that were sent from this board
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
@@ -307,10 +307,10 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
-                    //BLUE_LED_SET(true); //temporarily commented out
+                    BLUE_LED_SET(true); //temporarily commented out
                 } else if (act_state == ACTUATOR_OFF) {
                     BATTERY_CHARGER_EN(false);
-                    //BLUE_LED_SET(false); //temporarily bye
+                    BLUE_LED_SET(false); //temporarily bye
                 }
             }
             
@@ -318,10 +318,10 @@ static void can_msg_handler(const can_msg_t *msg) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
-                    // CAN_5V_SET(true);
+                    CAN_5V_SET(true);
                     RED_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
-                    // CAN_5V_SET(false);
+                    CAN_5V_SET(false);
                     RED_LED_SET(false);
                 }
             }
@@ -551,7 +551,7 @@ void pwm_init(void)
  
 void updatePulseWidth(float percent)
 {
-    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + (1-percent) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + (percent) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
     uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;

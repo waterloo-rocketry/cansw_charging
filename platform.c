@@ -109,7 +109,7 @@ void pin_init(void) {
     LATA0 = !LED_ON;
 
     // Rocket power lines
-    LATA3 = CAN_5V_ON;
+    LATA3 = !CAN_5V_ON;
     TRISA3 = 0; // allow 5V current line to be toggle-able
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     TRISB0 = 1; // set 5V current draw (can 5V bus) to be input
@@ -183,7 +183,7 @@ double low_pass_curr_13v = 0;
 double low_pass_curr_5v = 0;
 //i think this is needed for 13V BATT Motor and 5V current readings? not sure tho
 void update_batt_curr_low_pass(void) {
-    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
+    double new_curr_reading = ADCC_GetSingleConversion(channel_BATT_CURR) / CURR_BATT_RESISTOR;
     low_pass_curr_batt = alpha_low * low_pass_curr_batt + (1.0 - alpha_low) * new_curr_reading;
 }
 
@@ -192,7 +192,7 @@ uint16_t get_batt_curr_low_pass(void) {
 }
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 void update_motor_curr_low_pass(void) {
-    double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) / CURR_13V_RESISTOR;
+    double new_curr_reading = ADCC_GetSingleConversion(channel_MOTOR_CURR) / CURR_MOTOR_RESISTOR;
     low_pass_curr_motor = alpha_low * low_pass_curr_motor + (1.0 - alpha_low) * new_curr_reading;
 }
 
