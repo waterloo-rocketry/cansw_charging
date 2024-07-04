@@ -5,22 +5,12 @@
 #include "device_config.h"
 #include "error_checks.h"
 #include "platform.h"
-#include "stdint.h"
-#if (IS_KETO)
-    #define MOTOR_POWER LATB1 //Keto D7
-    #define MOTOR_PWM LATB0   //Keto D6
-    #define MOTOR_ON 0
-#else
-    #define MOTOR_POWER LATB3
-    #define MOTOR_PWM LATB5
-    #define MOTOR_ON 1             
-#endif
+#include "stdint.h"         
 
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
-void actuate_airbrakes(float extension);
-//extern void timer2_handle_interrupt(void);
 void pwm_init(void);
+
 // memory pool for the CAN tx buffer
 uint8_t tx_pool[100];
 volatile bool seen_can_message = false;
@@ -65,11 +55,11 @@ void updatePulseWidth(float percent);
 
 //setup payload variables
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 0;
-const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1000; 
-const uint16_t MIN_PULSE_WIDTH_US = 0;
-const uint16_t MAX_PULSE_WIDTH_US = 1000; 
-uint16_t cmd_payload_rpm = 0; //payload is just running at one speed? make const?
+const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
+const uint16_t MIN_PULSE_WIDTH_US = 1500;
+const uint16_t MAX_PULSE_WIDTH_US = 1900; 
+const float PERCENT_SPEED = 0.5;
 #endif
 
 int main(void) {
@@ -103,13 +93,6 @@ int main(void) {
 
     #if (BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
     pwm_init();
-    //for 1.5 ms (90 deg))
-    //CCPR3H = 0b00000010;
-    //CCPR3L = 0b00110011;
-    //for 2.4 ms (171 deg)
-    CCPR3H = 0b00000010;
-    CCPR3L = 0b01110011;
-    MOTOR_POWER = MOTOR_ON;
     #endif
 
     // loop timer
@@ -292,12 +275,11 @@ static void can_msg_handler(const can_msg_t *msg) {
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
         return;
     }
-    //RED_LED_SET(true);
 
     int act_id;
     int act_state;
     int dest_id;
-    int percent_act;
+
     switch (msg_type) {
         case MSG_ACTUATOR_CMD: // this will toggle *all* battery chargers, not just CHARGING_CAN
             act_id = get_actuator_id(msg);
@@ -386,10 +368,11 @@ static void can_msg_handler(const can_msg_t *msg) {
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                cmd_payload_rpm = get_req_actuator_state_analog(msg);
+                updatePulseWidth(PERCENT_SPEED);
             }
             break;
 #endif     
+            
         // all the other ones - do nothing
             
         default:
@@ -419,27 +402,6 @@ static void __interrupt() interrupt_handler(void) {
 }
 
 //Motor control functions
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-void actuate_airbrakes(float extension) {
-    
-    if (debug_en) {
-        debug_en = false;
-        airbrakes_act_time = millis();
-    }
-}
-
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-float percent2Cycle(float percent) {
-    return (MIN_PULSE_WIDTH_US + percent * (MAX_PULSE_WIDTH_US - MIN_PULSE_WIDTH_US));
-}
-
-void actuate_payload(float extension) {
-    // percent2Cycle(extension);
-    // do another thing (write a value via PWM to B5)
-}
-#endif
-
-
 void pwm_init(void){
     //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
     //   disable the CCPx pin output driver by setting the associated TRIS bit.
@@ -458,6 +420,7 @@ void pwm_init(void){
     //4. Load the CCPRxL register, and the CCPRxH register with the PWM duty cycle value and configure the FMT bit of the CCPxCON register
     //to set the proper register alignment.
     
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     //for 500us (0 deg)
     CCPR3H = 0b00000000;
     CCPR3L = 0b10111100;
@@ -470,6 +433,12 @@ void pwm_init(void){
     //for 2.5 ms (180 deg))
     //CCPR3H = 0b00000011;
     //CCPR3L = 0b10101010;
+    #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    //for 1.5 ms (neutral)
+    CCPR3H = 0b00000010;
+    CCPR3L = 0b00110011;
+    //max is 1.9 ms
+    #endif
 
     //5. Configure and start Timer2:
     //- Clear the TMR2IF interrupt flag bit of the respective PIR register. See Note below.
@@ -480,74 +449,17 @@ void pwm_init(void){
     T2CONbits.CKPS = 0b111; //prescale of 128
     //- Enable the Timer by setting the ON bit of the T2CON register.
     T2CONbits.ON = 1; //enables timer
-    //CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
     
     //6. Enable PWM output pin:
     //- Wait until the Timer overflows and the TMR2IF bit of the PIR4 register is set. See Note below.
     while (PIR4bits.TMR2IF == 0)
     {}
+    
     //- Enable the CCPx pin output driver by clearing the associated TRIS bit.
     TRISB5 = 0;
 }
 
-
-/*
-void pwm_init(void)
-{
-    
-    //1. Disable PWMx by setting TRISx
-    TRISB5 = 1; // motor PWM output (visualized on D6) //this would have set D7??? 
-    
-    //2. Clear PWMxCON
-   
-    PWM5CON = 0;
-    
-    //3. Load T2PR with period
-    T2PR = 251; //initialize with 2700us -> 252.13 with a prescale of 128 (rounds to 252)
-    
-    //4. Load PWMxDCH and PWMxDCL<7:6> with duty cycle (ben says 2.5ms)
-    //Loading min pulse width (500us) needs 187.5 in 10-bit combined register (rounds to 188) 
-    //19 -> 00101111:00 (8bit * 4 + 2bit)
-    PWM5DCH = 0b00101111;
-    PWM5DCLbits.DC = 0b00;
-    
-    //5. Initialize timer
-    
-    PIR4bits.TMR2IF = 0;
-    T2CLK = 0b0001; //selects Fosc/4 (pg 321)
-    T2CONbits.CKPS = 0b111; //prescale of 128
-    T2CONbits.ON = 1; //enables timer
-    CCPTMRS1bits.P5TSEL = 0b00; //joes magic line (not magic))
-    
-    //6. Enable PWM output and wait for timer overflow, TMRxIF of PIR is set
-    
-    PWM5CONbits.EN = 1;
-    while (PIR4bits.TMR2IF == 0)
-    {}
-    
-    //7. Enable PWM pin output drivers
-    TRISB5 = 0;
-    RB5PPS = PWM5OUT; //map PWM5OUT to B5
-    
-    //8. Load appropriate values to PWMxCON
-    
-    PWM5CONbits.POL = 1; //set to non-inverting
-    
-    return;
-}
- */
-
-//function to take %extension and turn into bits to write to PWMxDCH and PWMxDCL
-
-//void updatePulseWidth(float percent)
-//{
-//    uint16_t pulseWidth = (uint16_t)(percent * 4 * (T2PR + 1));
-//    PWM5DCH = (pulseWidth >> 2) & 0xff;
-//    PWM5DCLbits.DC = pulseWidth & 0x03;
-//    return;
-//}
-
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
  
 void updatePulseWidth(float percent)
 {
