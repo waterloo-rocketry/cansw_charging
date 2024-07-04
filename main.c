@@ -43,11 +43,10 @@ uint32_t airbrakes_act_time = 0;
 const uint32_t MOTOR_ACT_TIME_MS = 5000; //Motor guaranteed to fully actuate in this time
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 500; // corresponds to 0 deg
 const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 180 deg
-const float MOTOR_MIN_EXT_DEG = 0.0;
-const float MOTOR_MAX_EXT_DEG = 180.0;
 const uint16_t AB_MIN_EXT_DEG = 0; //under this the servo will stall - 20 deg
 const uint16_t AB_MAX_EXT_DEG = 180; //over this the servo will stall -  140 deg
-//const uint16_t PWM_PERIOD = 500; // 1000*10us = 10ms period - 50us at 0.5% DC, 2500us at 25% DC
+
+
 void updatePulseWidth(float percent);
 #define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
 #define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
@@ -57,8 +56,6 @@ void updatePulseWidth(float percent);
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
 const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
-const uint16_t MIN_PULSE_WIDTH_US = 1500;
-const uint16_t MAX_PULSE_WIDTH_US = 1900; 
 const float PERCENT_SPEED = 0.5;
 #endif
 
@@ -105,8 +102,7 @@ int main(void) {
     bool heartbeat = false;
     while (1) {
         CLRWDT(); // feed the watchdog, which is set for 256ms
-        //RED_LED_SET(state == BOOST); //Keto stuff
-        //BLUE_LED_SET(state == COAST);
+
         if (OSCCON2 != 0x70) { // If the fail-safe clock monitor has triggered
             oscillator_init();
         }
@@ -138,7 +134,6 @@ int main(void) {
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
-            status_ok &= check_battery_current_error();
             
             #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_5v_current_error();
@@ -151,16 +146,6 @@ int main(void) {
             }
             
             #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-            /* 
-            // Current draws
-            can_msg_t vcc_curr_msg; // measures the VCC current (mosfit decides
-            // groundside or lipo battery)
-            // implements cansw_arming's rolling average to act as a low-pass
-            // voltage filter
-            build_analog_data_msg(
-            millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &vcc_curr_msg);
-            txb_enqueue(&vcc_curr_msg); //COPY THIS FOR OTHER CURRENT SENSING
-            */
             
             can_msg_t curr_msg_5v; // measures current going into CAN 5V
             build_analog_data_msg(millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(), &curr_msg_5v);
@@ -198,7 +183,6 @@ int main(void) {
             // Voltage health
             
             //battery voltage msg is constructed in check_battery_voltage_error if no error
-
             can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
                 millis(),
@@ -248,14 +232,7 @@ int main(void) {
                 MOTOR_POWER = !MOTOR_ON;
                 cmd_airbrakes_ext = 0;
             }
-            
-            //test code: run pwm command
-            //pwm_init();
-            if (cmd_airbrakes_ext != curr_airbrakes_ext) {
-                actuate_airbrakes(cmd_airbrakes_ext);
-                curr_airbrakes_ext = cmd_airbrakes_ext;
-                updatePulseWidth(cmd_airbrakes_ext);
-            }
+
         #endif
     }
 }
@@ -319,8 +296,8 @@ static void can_msg_handler(const can_msg_t *msg) {
             break;
 
         case MSG_LEDS_ON:
-            RED_LED_SET(true); //Keto D3
-            BLUE_LED_SET(true); //Keto D4
+            RED_LED_SET(true); 
+            BLUE_LED_SET(true);
             WHITE_LED_SET(true);
             break;
 
