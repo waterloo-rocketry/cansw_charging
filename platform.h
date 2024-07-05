@@ -21,7 +21,7 @@
 // Reset if we go this long without seeing any CAN messages (including our own)
 #define MAX_BUS_DEAD_TIME_ms 10000
 
-// Voltage monitoring in 47k Ohms
+// Voltage monitoring in 100k Ohms
 #define BATT_RESISTANCE_DIVIDER 5.6
 #define GROUND_RESISTANCE_DIVIDER 5.6
 // Current monitoring in units of 10 milliohms
