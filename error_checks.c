@@ -109,8 +109,7 @@ bool check_13v_current_error(void) {
     // things look ok
     return true;
 }
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 bool check_motor_current_error(void) {
     uint16_t curr_draw_mA = get_motor_curr_low_pass();
 

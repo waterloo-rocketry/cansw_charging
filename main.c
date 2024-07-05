@@ -27,37 +27,34 @@ enum FLIGHT_PHASE {
 };
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-//const uint32_t BOOST_LENGTH_MS = 15000; // 15000ms = 15s - CHANGE THIS
-//const uint32_t COAST_LENGTH_MS = 20000;
 const uint32_t BOOST_LENGTH_MS = 1000; // for the purposes of debugging
-const uint32_t COAST_LENGTH_MS = 2000000;
+const uint32_t COAST_LENGTH_MS = 2000000; // see above
 volatile bool debug_en = false;
 
-//Commanded extension is 0-1 as fraction of full extension
-volatile float cmd_airbrakes_ext = 0;
-volatile float debug_cmd_airbrakes_ext = 0;
-float curr_airbrakes_ext = 0;
+//Commanded extension is 0-100 as % of full extension
+volatile uint8_t cmd_airbrakes_ext = 0;
+volatile uint8_t debug_cmd_airbrakes_ext = 0;
+uint8_t curr_airbrakes_ext = 0;
 uint32_t airbrakes_act_time = 0;
 
 //motor constants
-const uint32_t MOTOR_ACT_TIME_MS = 5000; //Motor guaranteed to fully actuate in this time
+const uint32_t MOTOR_ACT_TIME_MS = 500; //Motor guaranteed to fully actuate in this time
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 500; // corresponds to 0 deg
-const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 180 deg
-const uint16_t AB_MIN_EXT_DEG = 0; //under this the servo will stall - 20 deg
-const uint16_t AB_MAX_EXT_DEG = 180; //over this the servo will stall -  140 deg
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 117 deg
 
 
-void updatePulseWidth(float percent);
-#define PERCENT_TO_DEG(percent) ( (float) percent * (AB_MAX_EXT_DEG - AB_MIN_EXT_DEG) + AB_MIN_EXT_DEG)
-#define DEG_TO_PULSEWIDTH(deg) ( (uint16_t) ((deg/MOTOR_MAX_EXT_DEG) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US) )
-#define PERCENT_TO_PULSEWIDTH(percent) ( DEG_TO_PULSEWIDTH(PERCENT_TO_DEG(percent)) )
+void updatePulseWidth(uint8_t percent);
+#define PERCENT_TO_PULSEWIDTH(percent) ( (uint16_t) (percent / 100.0) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US )
 
 //setup payload variables
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
 const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
-const float PERCENT_SPEED = 0.5;
+const uint8_t PERCENT_SPEED = 50; //percent from 0-100
+void updatePulseWidth(uint8_t percent);
 #endif
+
+//LEDs: White is heartbeat, Blue is Motor or 5V enable, Red is Battery Charging enable
 
 int main(void) {
     // initialize mcc functions
@@ -88,7 +85,7 @@ int main(void) {
     // set up CAN tx buffer
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
-    #if (BOARD_UNIQUE_ID != BOARD_ID_CHARGING_CAN)
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     pwm_init();
     #endif
 
@@ -96,8 +93,7 @@ int main(void) {
     uint32_t last_millis = 0;
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
-    
-    //BATTERY_CHARGER_EN(true);
+    BATTERY_CHARGER_EN(false);
 
     bool heartbeat = false;
     while (1) {
@@ -128,8 +124,9 @@ int main(void) {
             heartbeat = !heartbeat;
             
             //power on/off indicator
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
             BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
-
+            #endif
             // check for general board status
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
@@ -232,6 +229,10 @@ int main(void) {
                 MOTOR_POWER = !MOTOR_ON;
                 cmd_airbrakes_ext = 0;
             }
+        
+            updatePulseWidth(cmd_airbrakes_ext);
+            
+            
 
         #endif
     }
@@ -240,16 +241,9 @@ int main(void) {
 static void can_msg_handler(const can_msg_t *msg) {
     seen_can_message = true;
     uint16_t msg_type = get_message_type(msg);
-    
-    //echo -n "m0C0,00,00,00,01,00;" > /dev/tty.usbmodem12401                   //injector valve open message
-    //echo -n "m220,00,00,00,09,00,00,80,3F;" > /dev/tty.usbmodem21401          //actuate to 1
-    //echo -n "m220,00,00,00,09,66,66,66,3F;" > /dev/tty.usbmodem21401          //actuate to 0.9
-    //echo -n "m220,00,00,00,09,00,00,00,3F;" > /dev/tty.usbmodem21401          //actuate to 0.5
-    //echo -n "m220,00,00,00,09,DC,CC,CC,3E;" > /dev/tty.usbmodem21401          //actuate to 0.4
-    //echo -n "m220,00,00,00,09,00,00,00,00;" > /dev/tty.usbmodem21401          //actuate to 0.0
 
     // ignore messages that were sent from this board
-    if (get_board_unique_id(msg) == BOARD_UNIQUE_ID || get_board_unique_id(msg)==BOARD_ID_LOGGER) {
+    if (get_board_unique_id(msg) == BOARD_UNIQUE_ID) {
         return;
     }
 
@@ -266,10 +260,10 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
-                    BLUE_LED_SET(true); //temporarily commented out
+                    RED_LED_SET(true); //temporarily commented out
                 } else if (act_state == ACTUATOR_OFF) {
                     BATTERY_CHARGER_EN(false);
-                    BLUE_LED_SET(false); //temporarily bye
+                    RED_LED_SET(false); //temporarily bye
                 }
             }
             
@@ -278,10 +272,10 @@ static void can_msg_handler(const can_msg_t *msg) {
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
                     CAN_5V_SET(true);
-                    RED_LED_SET(true);
+                    BLUE_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
                     CAN_5V_SET(false);
-                    RED_LED_SET(false);
+                    BLUE_LED_SET(false);
                 }
             }
 #endif
@@ -318,11 +312,10 @@ static void can_msg_handler(const can_msg_t *msg) {
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
-            float act_state = get_req_actuator_state_analog(msg);
+            uint8_t act_state = get_req_actuator_state_analog(msg);
             
-            if(act_state == -1.0) break; //invalid message field or message type
-            if(act_state > 1.0) act_state = 1.0; //bounds checking
-            if(act_state < 0.0) act_state = 0.0;
+            if(act_state == 255) break; //invalid message field or message type
+            if(act_state > 100) act_state = 100; //bounds checking
             
             if (act_id == ACTUATOR_AIRBRAKES_SERVO) {
                 if(state == COAST || (debug_en && debug_cmd_airbrakes_ext == act_state && state == PRE_FLIGHT))
@@ -330,7 +323,6 @@ static void can_msg_handler(const can_msg_t *msg) {
                     airbrakes_act_time = millis();
                     cmd_airbrakes_ext = act_state;
                     MOTOR_POWER = MOTOR_ON;
-                    updatePulseWidth(act_state);
                 }
             }
             
@@ -398,23 +390,11 @@ void pwm_init(void){
     //to set the proper register alignment.
     
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-    //for 500us (0 deg)
     CCPR3H = 0b00000000;
     CCPR3L = 0b10111100;
-    //for 1.5 ms (90 deg))
-    //CCPR3H = 0b00000010;
-    //CCPR3L = 0b00110011;
-    //for 2.4 ms (171 deg)
-    //CCPR3H = 0b00000011;
-    //CCPR3L = 0b10000100;
-    //for 2.5 ms (180 deg))
-    //CCPR3H = 0b00000011;
-    //CCPR3L = 0b10101010;
     #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    //for 1.5 ms (neutral)
     CCPR3H = 0b00000010;
     CCPR3L = 0b00110011;
-    //max is 1.9 ms
     #endif
 
     //5. Configure and start Timer2:
@@ -438,15 +418,13 @@ void pwm_init(void){
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
  
-void updatePulseWidth(float percent)
+void updatePulseWidth(uint8_t percent)
 {
-    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + (percent) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + ((float)percent / 100.0) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
     uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
     //write PW/(Tosc * prescale value)
     CCPR3L = bitWrite & 0xFF;
     CCPR3H = (bitWrite >> 8) & 0x03; //honestly not sure abt this either this is like a very rough guess but as long as the servo wiggles its fine
-    //CCPR3H = (bitWrite >> 8);
-    //CCPR3L = (bitWrite - (CCPR3L << 8)); //this is sus idk how to bitwise operator //help this is really funny
 }
 
 #endif
