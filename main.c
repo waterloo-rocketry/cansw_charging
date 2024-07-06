@@ -5,7 +5,8 @@
 #include "device_config.h"
 #include "error_checks.h"
 #include "platform.h"
-#include "stdint.h"         
+#include "stdint.h"       
+#include "pwm.h"
 
 #ifndef BOARD_UNIQUE_ID
 #error "Error: No board ID"
@@ -42,23 +43,11 @@ volatile uint8_t cmd_airbrakes_ext = 0;
 volatile uint8_t debug_cmd_airbrakes_ext = 0;
 uint8_t curr_airbrakes_ext = 0;
 uint32_t airbrakes_act_time = 0;
-
-//motor constants
 const uint32_t MOTOR_ACT_TIME_MS = 500; //Motor guaranteed to fully actuate in this time
-const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 500; // corresponds to 0 deg
-const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 117 deg
 
-
-void updatePulseWidth(uint8_t percent);
-#define PERCENT_TO_PULSEWIDTH(percent) ( (uint16_t) (percent / 100.0) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US) + MOTOR_MIN_PULSE_WIDTH_US )
-
-//setup payload variables
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
-const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
-const uint8_t PERCENT_SPEED = 50; //percent from 0-100
 volatile bool payload_pump = false;
-void updatePulseWidth(uint8_t percent);
+const uint8_t PERCENT_SPEED = 50; //percent from 0-100
 #endif
 
 //LEDs: White is heartbeat, Blue is Motor or 5V enable, Red is Battery Charging enable

@@ -32,6 +32,7 @@
 #define	PWM_H
 
 void pwm_init(void);
+void updatePulseWidth(uint8_t percent);
 
 #endif	/* XC_HEADER_TEMPLATE_H */
 

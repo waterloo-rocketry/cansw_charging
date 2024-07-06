@@ -14,6 +14,15 @@
 /*
  * 
  */
+
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 500; // corresponds to 0 deg
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 2500; // corresponds to 117 deg
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
+const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
+#endif
+
 //Motor control functions
 void pwm_init(void){
     //1. Use the desired output pin RxyPPS control to select CCPx as the source and 
