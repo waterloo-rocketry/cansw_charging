@@ -93,6 +93,7 @@ int main(void) {
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
     BATTERY_CHARGER_EN(false);
+    
 
     bool heartbeat = false;
     while (1) {
@@ -138,7 +139,7 @@ int main(void) {
 
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
-                send_status_ok();
+               send_status_ok();
             }
             
             #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
