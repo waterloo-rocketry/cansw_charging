@@ -137,7 +137,7 @@ void ADCC_Initialize(void)
     ADACCU = 0x00;
     // ADRPT 0; 
     ADRPT = 0x00;
-    // ADPCH ANA0; 
+    // ADPCH ANC4; 
     ADPCH = 0b010100;//x00;
     //ADPCH = 0x12;
     // ADACQ 0; 
