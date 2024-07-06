@@ -51,6 +51,7 @@ void updatePulseWidth(uint8_t percent);
 const uint16_t MOTOR_MIN_PULSE_WIDTH_US = 1500;
 const uint16_t MOTOR_MAX_PULSE_WIDTH_US = 1900; 
 const uint8_t PERCENT_SPEED = 50; //percent from 0-100
+volatile bool payload_pump = false;
 void updatePulseWidth(uint8_t percent);
 #endif
 
@@ -87,6 +88,9 @@ int main(void) {
 
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     pwm_init();
+    #endif
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    updatePulseWidth(PERCENT_SPEED);
     #endif
 
     // loop timer
@@ -205,36 +209,44 @@ int main(void) {
 #endif            
         }
 
-        #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-            // state transition from boost to coast, enable motor
-            if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
-                state = COAST;
-                MOTOR_POWER = MOTOR_ON;
-            }
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+        // state transition from boost to coast, enable motor
+        if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
+            state = COAST;
+            MOTOR_POWER = MOTOR_ON;
+        }
         
         
-            //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
-            if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
-                state = DESCENT;
-            
-                MOTOR_POWER = MOTOR_ON;
-                cmd_airbrakes_ext = 0;
-                airbrakes_act_time = millis();
-            }
+        //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
+        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
+            state = DESCENT;
+         
+            MOTOR_POWER = MOTOR_ON;
+            cmd_airbrakes_ext = 0;
+            airbrakes_act_time = millis();
+        }
         
-            //If we are on the ground or in descent, cut motor power after a certain period of time
-            if ((state == PRE_FLIGHT || state == DESCENT) 
-                && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
+        //If we are on the ground or in descent, cut motor power after a certain period of time
+        if ((state == PRE_FLIGHT || state == DESCENT) 
+            && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
-                MOTOR_POWER = !MOTOR_ON;
-                cmd_airbrakes_ext = 0;
-            }
+            MOTOR_POWER = !MOTOR_ON;
+            cmd_airbrakes_ext = 0;
+        }
         
-            updatePulseWidth(cmd_airbrakes_ext);
+        updatePulseWidth(cmd_airbrakes_ext);
             
             
-
-        #endif
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+        if (payload_pump)
+        {
+            MOTOR_POWER = MOTOR_ON;
+        }
+        else
+        {
+            MOTOR_POWER = !MOTOR_ON;
+        }
+#endif
     }
 }
 
@@ -268,7 +280,7 @@ static void can_msg_handler(const can_msg_t *msg) {
             }
             
             //RocketCAN 5V Line On/Off
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
                     CAN_5V_SET(true);
@@ -278,17 +290,15 @@ static void can_msg_handler(const can_msg_t *msg) {
                     BLUE_LED_SET(false);
                 }
             }
-#endif
             //Catch injector valve open command to signal boost phase
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             else if (act_id == ACTUATOR_INJECTOR_VALVE && act_state == ACTUATOR_ON) {
                 // inj open -> we're launching
                 inj_open_time = millis();
                 state = BOOST;
             }
-#endif
             break;
-
+#endif
         case MSG_LEDS_ON:
             RED_LED_SET(true); 
             BLUE_LED_SET(true);
@@ -337,7 +347,14 @@ static void can_msg_handler(const can_msg_t *msg) {
         case MSG_ACT_ANALOG_CMD:
             act_id = get_actuator_id(msg);
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                updatePulseWidth(PERCENT_SPEED);
+                if (act_state == 0)
+                {
+                    payload_pump = false;
+                }
+                else
+                {
+                    payload_pump = true;
+                }
             }
             break;
 #endif     
