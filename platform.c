@@ -3,17 +3,6 @@
 #include "mcc_generated_files/adcc.h"
 #include "platform.h"
 
-// LEDs and switches
-#define LED_ON 0
-#define CAN_5V_ON 1
-#define CHG_BATT_ON 0
-#define MOTOR_ON 1
-#define SAMPLE_FREQ (1000.0 / MAX_SENSOR_LOOP_TIME_DIFF_ms)
-#define LOW_PASS_ALPHA(TR) ((SAMPLE_FREQ * TR / 5.0) / (1 + SAMPLE_FREQ * TR / 5.0))
-#define LOW_PASS_RESPONSE_TIME 10 // seconds
-#define MOTOR_POWER LATB3
-#define MOTOR_PWM LATB5 
-
 void pin_init(void) {
     // LEDS
     TRISA2 = 0; // set red LED pin as output
