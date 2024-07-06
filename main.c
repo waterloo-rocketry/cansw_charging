@@ -7,6 +7,12 @@
 #include "platform.h"
 #include "stdint.h"         
 
+#ifndef BOARD_UNIQUE_ID
+#error "Error: No board ID"
+#endif
+#if !(BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+#error "Error: Invalid board ID"
+#endif
 static void can_msg_handler(const can_msg_t *msg);
 static void send_status_ok(void);
 void pwm_init(void);
