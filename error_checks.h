@@ -7,18 +7,31 @@
 
 // for voltages within these ranges, a warning will be sent out over CAN
 // values were determined by the given voltage rail range
-#define BATT_UNDERVOLTAGE_THRESHOLD_mV 9000
-#define BATT_OVERVOLTAGE_THRESHOLD_mV 12600
+#define UNDERVOLTAGE_THRESHOLD_BATT_mV 9000
+#define OVERVOLTAGE_THRESHOLD_BATT_mV 12600
 
 // at this current, a warning will be sent out over CAN
-#define BATT_OVERCURRENT_THRESHOLD_mA 2000
+#define OVERCURRENT_THRESHOLD_BATT_mA 5700 //fuse goes at 6300
 
 // From bus line. At this current, a warning will be sent out over CAN
-#define BUS_OVERCURRENT_THRESHOLD_mA 500
+#define OVERCURRENT_THRESHOLD_5V_mA 1800 //buck rated for 2A max
+#define OVERCURRENT_THRESHOLD_13V_mA 2700 //buck rated for 3A max
+
+
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+#define OVERCURRENT_THRESHOLD_MOTOR_mA 4500
+#endif
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+#define OVERCURRENT_THRESHOLD_MOTOR_mA 600
+#endif
 
 // General board status checkers
 bool check_battery_voltage_error(void);
 bool check_battery_current_error(void);
-bool check_bus_current_error(void);
-
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+bool check_5v_current_error(void);
+bool check_13v_current_error(void);
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+bool check_motor_current_error(void);
+#endif
 #endif /* ERROR_CHECKS_H */
