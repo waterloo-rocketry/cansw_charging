@@ -18,7 +18,7 @@ void pin_init(void) {
     LATA0 = !LED_ON;
 
     // Rocket power lines
-    LATA3 = !CAN_5V_ON;
+    LATA3 = CAN_5V_ON;
     TRISA3 = 0; // allow 5V current line to be toggle-able
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     TRISB1 = 1; // set 13V current draw (battery) to be input

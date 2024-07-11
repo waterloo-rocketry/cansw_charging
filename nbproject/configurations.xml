@@ -65,10 +65,11 @@
       <itemPath>device_config.c</itemPath>
       <itemPath>platform.c</itemPath>
       <itemPath>error_checks.c</itemPath>
+      <itemPath>pwm.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>canlib</Elem>
+    <Elem>.</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -80,8 +81,8 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>2.46</languageToolchainVersion>
-        <platform>4</platform>
+        <languageToolchainVersion>2.45</languageToolchainVersion>
+        <platform>3</platform>
       </toolsSet>
       <packs>
         <pack name="PIC18F-K_DFP" vendor="Microchip" version="1.13.292"/>
@@ -150,7 +151,6 @@
       </HI-TECH-COMP>
       <HI-TECH-LINK>
         <property key="additional-options-checksum" value=""/>
-        <property key="additional-options-checksumAVR" value=""/>
         <property key="additional-options-code-offset" value=""/>
         <property key="additional-options-command-line" value=""/>
         <property key="additional-options-errata" value=""/>
@@ -205,7 +205,6 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="event.recorder.debugger.behavior" value="Running"/>
         <property key="event.recorder.enabled" value="false"/>
         <property key="event.recorder.scvd.files" value=""/>
         <property key="hwtoolclock.frcindebug" value="false"/>
