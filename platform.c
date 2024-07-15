@@ -20,7 +20,7 @@ void pin_init(void) {
     // Rocket power lines
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     LATA3 = CAN_5V_ON;
-    #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     LATA3 = CAN_5V_OFF;
     #endif
     TRISA3 = 0; // allow 5V current line to be toggle-able
