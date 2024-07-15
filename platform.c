@@ -18,16 +18,23 @@ void pin_init(void) {
     LATA0 = !LED_ON;
 
     // Rocket power lines
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     LATA3 = CAN_5V_ON;
+    #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    LATA3 = CAN_5V_OFF;
+    #endif
     TRISA3 = 0; // allow 5V current line to be toggle-able
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+    
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     TRISB1 = 1; // set 13V current draw (battery) to be input
     ANSELB1 = 1; // enable analog reading
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD )
+    #endif
+
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD )
     TRISB0 = 1; // set 5V current draw (payload logic + motor) to be input
     ANSELB0 = 1; // enable analog reading
-#endif
+    #endif
+
     TRISC7 = 1; // set +BATT current draw (battery) to be input
     ANSELC7 = 1; // enable analog reading
 

@@ -84,9 +84,6 @@ int main(void) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     pwm_init();
     #endif
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    updatePulseWidth(PERCENT_SPEED);
-    #endif
 
     // loop timer
     uint32_t last_millis = 0;
@@ -237,10 +234,12 @@ int main(void) {
         if (payload_pump)
         {
             MOTOR_POWER = MOTOR_ON;
+            updatePulseWidth(PERCENT_SPEED);
         }
         else
         {
             MOTOR_POWER = !MOTOR_ON;
+            updatePulseWidth(0);
         }
 #endif
     }
@@ -345,11 +344,11 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
                 if (act_state == 0)
                 {
-                    payload_pump = false;
+                    payload_pump = true;
                 }
                 else
                 {
-                    payload_pump = true;
+                    payload_pump = false;
                 }
             }
             break;
