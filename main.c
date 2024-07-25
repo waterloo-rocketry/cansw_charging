@@ -342,10 +342,10 @@ static void can_msg_handler(const can_msg_t *msg) {
              
             //Payload servo command logic
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-        case MSG_ACT_ANALOG_CMD:
+        case MSG_ACTUATOR_CMD:
             act_id = get_actuator_id(msg);
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                if (act_state == 0)
+                if (ACTUATOR_ON)
                 {
                     payload_pump = true;
                 }
