@@ -253,7 +253,6 @@ static void can_msg_handler(const can_msg_t *msg) {
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID) {
         return;
     }
-    //if (get_board_uniqe_id(msg) == 10)
 
     int act_id;
     int act_state;
@@ -344,8 +343,9 @@ static void can_msg_handler(const can_msg_t *msg) {
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
         case MSG_ACTUATOR_CMD:
             act_id = get_actuator_id(msg);
+            act_state = get_req_actuator_state(msg);
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                if (ACTUATOR_ON)
+                if (act_state == ACTUATOR_ON)
                 {
                     payload_pump = true;
                 }
