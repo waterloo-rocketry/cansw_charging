@@ -84,9 +84,6 @@ int main(void) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     pwm_init();
     #endif
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    updatePulseWidth(PERCENT_SPEED);
-    #endif
 
     // loop timer
     uint32_t last_millis = 0;
@@ -237,10 +234,12 @@ int main(void) {
         if (payload_pump)
         {
             MOTOR_POWER = MOTOR_ON;
+            updatePulseWidth(PERCENT_SPEED);
         }
         else
         {
             MOTOR_POWER = !MOTOR_ON;
+            updatePulseWidth(0);
         }
 #endif
     }
@@ -290,11 +289,13 @@ static void can_msg_handler(const can_msg_t *msg) {
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             else if (act_id == ACTUATOR_INJECTOR_VALVE && act_state == ACTUATOR_ON) {
                 // inj open -> we're launching
-                inj_open_time = millis();
-                state = BOOST;
+                if(inj_open_time == 0) {
+                    inj_open_time = millis();
+                    state = BOOST;
+                }
             }
-            break;
 #endif
+            break;
         case MSG_LEDS_ON:
             RED_LED_SET(true); 
             BLUE_LED_SET(true);
@@ -340,16 +341,17 @@ static void can_msg_handler(const can_msg_t *msg) {
              
             //Payload servo command logic
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-        case MSG_ACT_ANALOG_CMD:
+        case MSG_ACTUATOR_CMD:
             act_id = get_actuator_id(msg);
+            act_state = get_req_actuator_state(msg);
             if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                if (act_state == 0)
+                if (act_state == ACTUATOR_ON)
                 {
-                    payload_pump = false;
+                    payload_pump = true;
                 }
                 else
                 {
-                    payload_pump = true;
+                    payload_pump = false;
                 }
             }
             break;
