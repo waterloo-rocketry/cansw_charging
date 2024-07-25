@@ -253,6 +253,7 @@ static void can_msg_handler(const can_msg_t *msg) {
     if (get_board_unique_id(msg) == BOARD_UNIQUE_ID) {
         return;
     }
+    //if (get_board_uniqe_id(msg) == 10)
 
     int act_id;
     int act_state;
@@ -289,11 +290,13 @@ static void can_msg_handler(const can_msg_t *msg) {
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
             else if (act_id == ACTUATOR_INJECTOR_VALVE && act_state == ACTUATOR_ON) {
                 // inj open -> we're launching
-                inj_open_time = millis();
-                state = BOOST;
+                if(inj_open_time == 0) {
+                    inj_open_time = millis();
+                    state = BOOST;
+                }
             }
-            break;
 #endif
+            break;
         case MSG_LEDS_ON:
             RED_LED_SET(true); 
             BLUE_LED_SET(true);
