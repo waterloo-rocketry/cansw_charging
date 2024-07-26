@@ -43,7 +43,7 @@ volatile uint8_t cmd_airbrakes_ext = 0;
 volatile uint8_t debug_cmd_airbrakes_ext = 0;
 uint8_t curr_airbrakes_ext = 0;
 uint32_t airbrakes_act_time = 0;
-const uint32_t MOTOR_ACT_TIME_MS = 500; //Motor guaranteed to fully actuate in this time
+const uint32_t MOTOR_ACT_TIME_MS = 2000; //Motor guaranteed to fully actuate in this time
 
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 volatile bool payload_pump = false;
@@ -221,7 +221,6 @@ int main(void) {
             MOTOR_POWER = MOTOR_ON;
         }
         
-        
         //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
         if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
             state = DESCENT;
@@ -235,8 +234,9 @@ int main(void) {
         if ((state == PRE_FLIGHT || state == DESCENT) 
             && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
-            MOTOR_POWER = !MOTOR_ON;
             cmd_airbrakes_ext = 0;
+            updatePulseWidth(cmd_airbrakes_ext);
+            MOTOR_POWER = !MOTOR_ON;
         }
         
         updatePulseWidth(cmd_airbrakes_ext);
@@ -338,6 +338,7 @@ static void can_msg_handler(const can_msg_t *msg) {
                     airbrakes_act_time = millis();
                     cmd_airbrakes_ext = act_state;
                     MOTOR_POWER = MOTOR_ON;
+                    debug_en = false;
                 }
             }
             
