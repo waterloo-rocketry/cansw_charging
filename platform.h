@@ -52,11 +52,10 @@ uint16_t get_batt_curr_low_pass(void);
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
 void update_motor_curr_low_pass(void);
 uint16_t get_motor_curr_low_pass(void);
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+#endif
 void update_13v_curr_low_pass(void);
 uint16_t get_13v_curr_low_pass(void);
 void update_5v_curr_low_pass(void);
 uint16_t get_5v_curr_low_pass(void);
-#endif
 
 #endif /* BOARD_H */

@@ -180,7 +180,16 @@ int main(void) {
         
             // Voltage health
             
-            //battery voltage msg is constructed in check_battery_voltage_error if no error
+            //battery voltage
+            can_msg_t batt_volt_msg;
+            build_analog_data_msg(
+                millis(),
+                SENSOR_BATT_VOLT,
+                (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
+                &batt_volt_msg
+            );
+            result = txb_enqueue(&batt_volt_msg);
+        
             can_msg_t ground_volt_msg; // groundside battery voltage
             build_analog_data_msg(
                 millis(),
@@ -198,12 +207,11 @@ int main(void) {
         if (millis() - sensor_last_millis > MAX_SENSOR_LOOP_TIME_DIFF_ms) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
             update_motor_curr_low_pass();
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            #endif
             update_5v_curr_low_pass();
-            update_13v_curr_low_pass();
-#endif            
+            update_13v_curr_low_pass();      
         }
 
 #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
