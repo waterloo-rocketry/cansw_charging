@@ -89,7 +89,6 @@ int main(void) {
     uint32_t last_millis = 0;
     uint32_t sensor_last_millis = millis();
     uint32_t last_message_millis = millis();
-    BATTERY_CHARGER_EN(false);
     
 
     bool heartbeat = false;
@@ -123,7 +122,15 @@ int main(void) {
             //power on/off indicator
             #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
             BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
+            RED_LED_SET(LATA5 == CHG_BATT_ON); 
             #endif
+
+            //charging/canbus enable indicators
+            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            RED_LED_SET(LATA5 == CHG_BATT_ON); 
+            BLUE_LED_SET(LATA3 == CAN_5V_ON); 
+            #endif
+
             // check for general board status
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
@@ -139,8 +146,6 @@ int main(void) {
                send_status_ok();
             }
             
-            #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-            
             can_msg_t curr_msg_5v; // measures current going into CAN 5V
             build_analog_data_msg(millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(), &curr_msg_5v);
             txb_enqueue(&curr_msg_5v);
@@ -149,7 +154,6 @@ int main(void) {
             build_analog_data_msg(
                 millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
-            #endif
 
             bool result;
             // Battery charging current
@@ -267,10 +271,8 @@ static void can_msg_handler(const can_msg_t *msg) {
             if (act_id == ACTUATOR_CHARGE) {
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
-                    RED_LED_SET(true); //temporarily commented out
                 } else if (act_state == ACTUATOR_OFF) {
                     BATTERY_CHARGER_EN(false);
-                    RED_LED_SET(false); //temporarily bye
                 }
             }
             
@@ -279,10 +281,8 @@ static void can_msg_handler(const can_msg_t *msg) {
             else if (act_id == ACTUATOR_CANBUS) {
                 if (act_state == ACTUATOR_ON) {
                     CAN_5V_SET(true);
-                    BLUE_LED_SET(true);
                 } else if (act_state == ACTUATOR_OFF) {
                     CAN_5V_SET(false);
-                    BLUE_LED_SET(false);
                 }
             }
             //Catch injector valve open command to signal boost phase

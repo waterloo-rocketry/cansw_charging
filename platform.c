@@ -115,7 +115,7 @@ uint16_t get_motor_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_motor;
 }    
 #endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+
 void update_13v_curr_low_pass(void) {
     double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) * CONVERSION_ADC_TO_V / CURR_13V_RESISTOR;
     low_pass_curr_13v = alpha_low * low_pass_curr_13v + (1.0 - alpha_low) * new_curr_reading;
@@ -133,4 +133,3 @@ void update_5v_curr_low_pass(void) {
 uint16_t get_5v_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_5v;
 }
-#endif
