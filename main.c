@@ -308,8 +308,21 @@ static void can_msg_handler(const can_msg_t *msg) {
                     state = BOOST;
                 }
             }
-#endif
-            break;
+//Payload servo command logic
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+            else if (act_id == ACTUATOR_PAYLOAD_SERVO) {
+                if (act_state == ACTUATOR_ON)
+                {
+                    payload_pump = true;
+                }
+                else
+                {
+                    payload_pump = false;
+                }
+            }
+#endif     
+        break;
+        
         case MSG_LEDS_ON:
             RED_LED_SET(true); 
             BLUE_LED_SET(true);
@@ -353,24 +366,7 @@ static void can_msg_handler(const can_msg_t *msg) {
                 debug_en = true;
             }
              break;
-             
-            //Payload servo command logic
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-        case MSG_ACTUATOR_CMD:
-            act_id = get_actuator_id(msg);
-            act_state = get_req_actuator_state(msg);
-            if (act_id == ACTUATOR_PAYLOAD_SERVO) {
-                if (act_state == ACTUATOR_ON)
-                {
-                    payload_pump = true;
-                }
-                else
-                {
-                    payload_pump = false;
-                }
-            }
-            break;
-#endif     
+#endif             
             
         // all the other ones - do nothing
             
