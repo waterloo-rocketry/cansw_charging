@@ -276,7 +276,13 @@ static void can_msg_handler(const can_msg_t *msg) {
             act_state = get_req_actuator_state(msg);
             
             //Battery Charger On/Off
-            if (act_id == ACTUATOR_CHARGE) {
+#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+            if (act_id == ACTUATOR_CHARGE_CAN){
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
+            if (act_id == ACTUATOR_CHARGE_AIRBRAKE){
+#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+            if (act_id == ACTUATOR_CHARGE_PAYLOAD){
+#endif
                 if (act_state == ACTUATOR_ON) {
                     BATTERY_CHARGER_EN(true);
                 } else if (act_state == ACTUATOR_OFF) {
