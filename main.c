@@ -1,5 +1,5 @@
 #include <xc.h>
-#include "canlib.h"
+#include "canlib/canlib.h"
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
 #include "device_config.h"
@@ -47,7 +47,7 @@ const uint32_t MOTOR_ACT_TIME_MS = 2000; //Motor guaranteed to fully actuate in 
 
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 volatile bool payload_pump = false;
-const uint8_t PERCENT_SPEED = 50; //percent from 0-100
+const uint8_t PERCENT_SPEED = 20; //percent from 0-100
 #endif
 
 //LEDs: White is heartbeat, Blue is Motor or 5V enable, Red is Battery Charging enable
