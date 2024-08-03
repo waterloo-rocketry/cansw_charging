@@ -1,5 +1,5 @@
 #include <xc.h>
-#include "canlib/canlib.h"
+#include "canlib.h"
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
 #include "device_config.h"
@@ -30,12 +30,10 @@ enum FLIGHT_PHASE {
     PRE_FLIGHT = 0,
     BOOST,
     COAST,
-    DESCENT,
 };
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-const uint32_t BOOST_LENGTH_MS = 1000; // for the purposes of debugging
-const uint32_t COAST_LENGTH_MS = 2000000; // see above
+const uint32_t BOOST_LENGTH_MS = 9000; // for the purposes of debugging
 volatile bool debug_en = false;
 
 //Commanded extension is 0-100 as % of full extension
@@ -47,7 +45,7 @@ const uint32_t MOTOR_ACT_TIME_MS = 2000; //Motor guaranteed to fully actuate in 
 
 #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
 volatile bool payload_pump = false;
-const uint8_t PERCENT_SPEED = 20; //percent from 0-100
+const uint8_t PERCENT_SPEED = 50; //percent from 0-100
 #endif
 
 //LEDs: White is heartbeat, Blue is Motor or 5V enable, Red is Battery Charging enable
@@ -220,18 +218,8 @@ int main(void) {
             state = COAST;
             MOTOR_POWER = MOTOR_ON;
         }
-        
-        //state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
-        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
-            state = DESCENT;
-         
-            MOTOR_POWER = MOTOR_ON;
-            cmd_airbrakes_ext = 0;
-            airbrakes_act_time = millis();
-        }
-        
-        //If we are on the ground or in descent, cut motor power after a certain period of time
-        if ((state == PRE_FLIGHT || state == DESCENT) 
+        //If we are on the ground, cut motor power after a certain period of time
+        if ((state == PRE_FLIGHT) 
             && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
             cmd_airbrakes_ext = 0;
