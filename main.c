@@ -1,5 +1,5 @@
 #include <xc.h>
-#include "canlib.h"
+#include "canlib/canlib.h"
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
 #include "device_config.h"
@@ -28,9 +28,9 @@ uint32_t inj_open_time = 0;
 
 enum FLIGHT_PHASE {
     PRE_FLIGHT = 0,
-    DESCENT,
     BOOST,
     COAST,
+    DESCENT,
 };
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
