@@ -73,6 +73,16 @@ int main(void) {
     TRISC1 = 1;
     ANSELC1 = 0;
     CANRXPPS = 0x11; // make CAN read from C1 (page 264-265)
+    
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
+    pwm_init();
+    //suspicious lmao
+    MOTOR_POWER = MOTOR_ON;
+    updatePulseWidth(24);
+    airbrakes_act_time = millis();
+    while((millis() - airbrakes_act_time) < MOTOR_ACT_TIME_MS);
+    MOTOR_POWER = !MOTOR_ON;
+#endif
 
     // set up CAN module
     can_timing_t can_setup;
@@ -80,10 +90,6 @@ int main(void) {
     can_init(&can_setup, can_msg_handler);
     // set up CAN tx buffer
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
-
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    pwm_init();
-    #endif
 
     // loop timer
     uint32_t last_millis = 0;
@@ -233,8 +239,10 @@ int main(void) {
         if ((state == PRE_FLIGHT || state == DESCENT) 
             && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
-            cmd_airbrakes_ext = 0;
+            cmd_airbrakes_ext = 24;
             updatePulseWidth(cmd_airbrakes_ext);
+            airbrakes_act_time = millis();
+            while((millis() - airbrakes_act_time) < MOTOR_ACT_TIME_MS);
             MOTOR_POWER = !MOTOR_ON;
         }
         
