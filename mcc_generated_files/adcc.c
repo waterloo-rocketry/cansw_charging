@@ -138,12 +138,12 @@ void ADCC_Initialize(void)
     // ADRPT 0; 
     ADRPT = 0x00;
     // ADPCH ANC4; 
-    ADPCH = 0b010100;//x00;
+    ADPCH = 0b111111;//0b010100;//x00;
     //ADPCH = 0x12;
     // ADACQ 0; 
-    ADACQL = 0x00;
+    ADACQL = 0b11111111;
     // ADACQ 0; 
-    ADACQH = 0x00;
+    ADACQH = 0b11111;
     // ADCAP Additional uC disabled; 
     ADCAP = 0x00;
     // ADPRE 0; 
@@ -162,8 +162,8 @@ void ADCC_Initialize(void)
     ADREF = 0x03;
     // ADACT disabled; 
     ADACT = 0x00;
-    // ADCS FOSC/100; 
-    ADCLK = 0x31;
+    // ADCS FOSC/128; 
+    ADCLK = 0b111111;
     // ADGO stop; ADFM right; ADON enabled; ADCS FOSC/ADCLK; ADCONT disabled; 
     ADCON0 = 0x84;
 }

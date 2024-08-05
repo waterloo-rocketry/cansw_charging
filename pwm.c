@@ -43,8 +43,11 @@ void pwm_init(void){
     //to set the proper register alignment.
     
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-    CCPR3H = 0b00000000;
-    CCPR3L = 0b10111100;
+    uint32_t pulseWidth_us = (uint32_t) (MOTOR_MIN_PULSE_WIDTH_US + ((float)25 / 100.0) * (MOTOR_MAX_PULSE_WIDTH_US - MOTOR_MIN_PULSE_WIDTH_US));
+    uint32_t bitWrite = (uint32_t) ((pulseWidth_us * 48) / 128); //48 is Fosc in MHz, 128 is prescaler
+    //write PW/(Tosc * prescale value)
+    CCPR3L = bitWrite & 0xFF;
+    CCPR3H = (bitWrite >> 8) & 0x03; //honestly not sure abt this either this is like a very rough guess but as long as the servo wiggles its fine
     #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     CCPR3H = 0b00000010;
     CCPR3L = 0b00110011;

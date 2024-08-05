@@ -38,17 +38,7 @@ bool check_battery_voltage_error(void) {
         // shit's bad yo
         return false;
     }
-    else
-    {
-        can_msg_t batt_volt_msg; // lipo battery voltage
-        build_analog_data_msg(
-            millis(),
-            SENSOR_BATT_VOLT,
-            (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
-            &batt_volt_msg
-            );
-        txb_enqueue(&batt_volt_msg);
-    }
+
     // things look ok
     return true;
 }
