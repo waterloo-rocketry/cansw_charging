@@ -76,6 +76,9 @@ int main(void) {
     
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
     pwm_init();
+    #endif
+
+    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     //suspicious lmao
     MOTOR_POWER = MOTOR_ON;
     updatePulseWidth(24);
