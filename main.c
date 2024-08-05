@@ -28,6 +28,7 @@ uint32_t inj_open_time = 0;
 
 enum FLIGHT_PHASE {
     PRE_FLIGHT = 0,
+    DESCENT,
     BOOST,
     COAST,
 };
