@@ -39,7 +39,7 @@ const uint32_t COAST_LENGTH_MS = 35000-9000;
 volatile bool debug_en = false;
 
 //Commanded extension is 0-100 as % of full extension
-volatile uint8_t cmd_airbrakes_ext = 0;
+volatile uint8_t cmd_airbrakes_ext = 25;
 volatile uint8_t debug_cmd_airbrakes_ext = 0;
 uint8_t curr_airbrakes_ext = 0;
 uint32_t airbrakes_act_time = 0;
@@ -81,7 +81,7 @@ int main(void) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
     //suspicious lmao
     MOTOR_POWER = MOTOR_ON;
-    updatePulseWidth(24);
+    updatePulseWidth(cmd_airbrakes_ext);
     airbrakes_act_time = millis();
     #endif
 
@@ -230,17 +230,14 @@ int main(void) {
         
         if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
             state = DESCENT;
-         
+            cmd_airbrakes_ext = 25;
             MOTOR_POWER = MOTOR_ON;
-            cmd_airbrakes_ext = 0;
             airbrakes_act_time = millis();
         }
         
         //If we are on the ground or in descent, cut motor power after a certain period of time
         if ((state == PRE_FLIGHT || state == DESCENT) 
             && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
-            
-            cmd_airbrakes_ext = 24;
             updatePulseWidth(cmd_airbrakes_ext);
             MOTOR_POWER = !MOTOR_ON;
         }
