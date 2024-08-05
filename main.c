@@ -33,7 +33,8 @@ enum FLIGHT_PHASE {
 };
 
 enum FLIGHT_PHASE state = PRE_FLIGHT;
-const uint32_t BOOST_LENGTH_MS = 9000; // for the purposes of debugging
+const uint32_t BOOST_LENGTH_MS = 9000; 
+const uint32_t COAST_LENGTH_MS = 35000-9000;
 volatile bool debug_en = false;
 
 //Commanded extension is 0-100 as % of full extension
@@ -218,8 +219,17 @@ int main(void) {
             state = COAST;
             MOTOR_POWER = MOTOR_ON;
         }
-        //If we are on the ground, cut motor power after a certain period of time
-        if ((state == PRE_FLIGHT) 
+        
+        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
+            state = DESCENT;
+         
+            MOTOR_POWER = MOTOR_ON;
+            cmd_airbrakes_ext = 0;
+            airbrakes_act_time = millis();
+        }
+        
+        //If we are on the ground or in descent, cut motor power after a certain period of time
+        if ((state == PRE_FLIGHT || state == DESCENT) 
             && ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
             
             cmd_airbrakes_ext = 0;
