@@ -80,9 +80,7 @@ int main(void) {
     MOTOR_POWER = MOTOR_ON;
     updatePulseWidth(24);
     airbrakes_act_time = millis();
-    while((millis() - airbrakes_act_time) < MOTOR_ACT_TIME_MS);
-    MOTOR_POWER = !MOTOR_ON;
-#endif
+    #endif
 
     // set up CAN module
     can_timing_t can_setup;
@@ -241,8 +239,6 @@ int main(void) {
             
             cmd_airbrakes_ext = 24;
             updatePulseWidth(cmd_airbrakes_ext);
-            airbrakes_act_time = millis();
-            while((millis() - airbrakes_act_time) < MOTOR_ACT_TIME_MS);
             MOTOR_POWER = !MOTOR_ON;
         }
         
