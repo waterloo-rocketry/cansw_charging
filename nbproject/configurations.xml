@@ -79,7 +79,7 @@
         <targetDevice>PIC18F26K83</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>PICkit3PlatformTool</platformTool>
+        <platformTool>noID</platformTool>
         <languageToolchain>XC8</languageToolchain>
         <languageToolchainVersion>2.45</languageToolchainVersion>
         <platform>4</platform>
@@ -120,7 +120,8 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING_CAN"/>
+        <property key="define-macros"
+                  value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING_AIRBRAKE"/>
         <property key="disable-optimizations" value="true"/>
         <property key="extra-include-directories" value="canlib;mcc_generated_files"/>
         <property key="favor-optimization-for" value="-speed,+space"/>

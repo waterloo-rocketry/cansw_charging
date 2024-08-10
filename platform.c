@@ -1,6 +1,7 @@
 #include <xc.h>
 
 #include "mcc_generated_files/adcc.h"
+#include "canlib/canlib.h"
 #include "platform.h"
 
 void pin_init(void) {
@@ -21,7 +22,7 @@ void pin_init(void) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     LATA3 = CAN_5V_ON;
     #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    LATA3 = CAN_5V_OFF;
+    LATA3 = !CAN_5V_ON;
     #endif
     TRISA3 = 0; // allow 5V current line to be toggle-able
     
@@ -115,7 +116,7 @@ uint16_t get_motor_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_motor;
 }    
 #endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+
 void update_13v_curr_low_pass(void) {
     double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) * CONVERSION_ADC_TO_V / CURR_13V_RESISTOR;
     low_pass_curr_13v = alpha_low * low_pass_curr_13v + (1.0 - alpha_low) * new_curr_reading;
@@ -133,4 +134,3 @@ void update_5v_curr_low_pass(void) {
 uint16_t get_5v_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_5v;
 }
-#endif
