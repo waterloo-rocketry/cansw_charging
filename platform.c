@@ -1,6 +1,7 @@
 #include <xc.h>
 
 #include "mcc_generated_files/adcc.h"
+#include "canlib/canlib.h"
 #include "platform.h"
 
 void pin_init(void) {
