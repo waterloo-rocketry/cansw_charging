@@ -21,7 +21,7 @@ void pin_init(void) {
     #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     LATA3 = CAN_5V_ON;
     #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    LATA3 = CAN_5V_OFF;
+    LATA3 = !CAN_5V_ON;
     #endif
     TRISA3 = 0; // allow 5V current line to be toggle-able
     
