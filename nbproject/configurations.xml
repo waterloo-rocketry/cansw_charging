@@ -75,7 +75,6 @@
       <itemPath>device_config.c</itemPath>
       <itemPath>platform.c</itemPath>
       <itemPath>error_checks.c</itemPath>
-      <itemPath>pwm.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>

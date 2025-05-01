@@ -68,7 +68,7 @@ bool check_battery_current_error(void) {
     // things look ok
     return true;
 }
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+
 bool check_5v_current_error(void) {
     uint16_t curr_draw_mA = get_5v_curr_low_pass();
 
@@ -106,23 +106,3 @@ bool check_13v_current_error(void) {
     // things look ok
     return true;
 }
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-bool check_motor_current_error(void) {
-    uint16_t curr_draw_mA = get_motor_curr_low_pass();
-
-    if (curr_draw_mA > OVERCURRENT_THRESHOLD_MOTOR_mA) {
-        uint32_t timestamp = millis();
-        uint8_t curr_data[2] = {0};
-        curr_data[0] = (curr_draw_mA >> 8) & 0xff;
-        curr_data[1] = (curr_draw_mA >> 0) & 0xff;
-
-        can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_MOTOR_OVER_CURRENT, curr_data, 2, &error_msg);
-        txb_enqueue(&error_msg);
-        return false;
-    }
-
-    // things look ok
-    return true;
-}
-#endif

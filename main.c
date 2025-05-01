@@ -74,10 +74,6 @@ int main(void) {
     // set up CAN tx buffer
     txb_init(tx_pool, sizeof(tx_pool), can_send, can_send_rdy);
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    pwm_init();
-#endif
-
     // loop timer
     uint32_t last_millis = 0;
     uint32_t sensor_last_millis = millis();
@@ -112,42 +108,33 @@ int main(void) {
             WHITE_LED_SET(heartbeat);
             heartbeat = !heartbeat;
 
-// power on/off indicator
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-            BLUE_LED_SET(MOTOR_POWER == MOTOR_ON);
-#endif
             // check for general board status
             bool status_ok = true;
             status_ok &= check_battery_voltage_error();
             status_ok &= check_battery_current_error();
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             status_ok &= check_5v_current_error();
             status_ok &= check_13v_current_error();
-#endif
 
             // if there was an issue, a message would already have been sent out
             if (status_ok) {
                 send_status_ok();
             }
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
-
             can_msg_t curr_msg_5v; // measures current going into CAN 5V
-            build_analog_data_msg(millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(), &curr_msg_5v);
+            build_analog_data_msg(PRIO_LOW, millis(), SENSOR_5V_CURR, get_5v_curr_low_pass(), &curr_msg_5v);
             txb_enqueue(&curr_msg_5v);
 
             can_msg_t curr_msg_13v; // measures 13V current
             build_analog_data_msg(
-                millis(), SENSOR_13V_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
+                PRIO_LOW, millis(), SENSOR_MOTOR_CURR, get_13v_curr_low_pass(), &curr_msg_13v);
             txb_enqueue(&curr_msg_13v);
-#endif
 
             bool result;
             // Battery charging current
             can_msg_t curr_msg_chg; // charging current going into lipo
             build_analog_data_msg(
-                millis(),
+                PRIO_LOW, millis(),
                 SENSOR_CHARGE_CURR,
                 (uint16_t)(ADCC_GetSingleConversion(channel_CHARGE_CURR) / CHG_CURR_RESISTOR),
                 &curr_msg_chg);
@@ -155,23 +142,15 @@ int main(void) {
 
             can_msg_t curr_msg_batt; // current draw from lipo
             build_analog_data_msg(
-                millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
+                PRIO_LOW, millis(), SENSOR_BATT_CURR, get_batt_curr_low_pass(), &curr_msg_batt);
             result = txb_enqueue(&curr_msg_batt);
-
-// measure motor current
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-            can_msg_t curr_msg_motor;
-            build_analog_data_msg(
-                millis(), SENSOR_MOTOR_CURR, get_motor_curr_low_pass(), &curr_msg_motor);
-            result = txb_enqueue(&curr_msg_motor);
-#endif
 
             // Voltage health
 
             // battery voltage msg is constructed in check_battery_voltage_error if no error
             can_msg_t ground_volt_msg; // groundside battery voltage
-            build_analog_data_msg(millis(),
-                                  SENSOR_GROUND_VOLT,
+            build_analog_data_msg(PRIO_LOW, millis(),
+                                  SENSOR_CHARGE_VOLT,
                                   (uint16_t)(ADCC_GetSingleConversion(channel_GROUND_VOLT) *
                                              GROUND_RESISTANCE_DIVIDER),
                                   &ground_volt_msg);
@@ -185,49 +164,9 @@ int main(void) {
         if (millis() - sensor_last_millis > MAX_SENSOR_LOOP_TIME_DIFF_ms) {
             sensor_last_millis = millis();
             update_batt_curr_low_pass();
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-            update_motor_curr_low_pass();
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
             update_5v_curr_low_pass();
             update_13v_curr_low_pass();
-#endif
         }
-
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-        // state transition from boost to coast, enable motor
-        if (state == BOOST && ((millis() - inj_open_time) > BOOST_LENGTH_MS)) {
-            state = COAST;
-            MOTOR_POWER = MOTOR_ON;
-        }
-
-        // state transition from coast to descent, enable motor for MOTOR_ACT_TIME_MS
-        if (state == COAST && ((millis() - inj_open_time) > (BOOST_LENGTH_MS + COAST_LENGTH_MS))) {
-            state = DESCENT;
-
-            MOTOR_POWER = MOTOR_ON;
-            cmd_airbrakes_ext = 0;
-            airbrakes_act_time = millis();
-        }
-
-        // If we are on the ground or in descent, cut motor power after a certain period of time
-        if ((state == PRE_FLIGHT || state == DESCENT) &&
-            ((millis() - airbrakes_act_time) > MOTOR_ACT_TIME_MS)) {
-
-            MOTOR_POWER = !MOTOR_ON;
-            cmd_airbrakes_ext = 0;
-        }
-
-        updatePulseWidth(cmd_airbrakes_ext);
-
-#elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-        if (payload_pump) {
-            MOTOR_POWER = MOTOR_ON;
-            updatePulseWidth(PERCENT_SPEED);
-        } else {
-            MOTOR_POWER = !MOTOR_ON;
-            updatePulseWidth(0);
-        }
-#endif
     }
 }
 

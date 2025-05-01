@@ -18,22 +18,14 @@ void pin_init(void) {
     LATA0 = !LED_ON;
 
     // Rocket power lines
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     LATA3 = CAN_5V_ON;
-    #elif (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)
-    LATA3 = CAN_5V_OFF;
-    #endif
     TRISA3 = 0; // allow 5V current line to be toggle-able
     
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
     TRISB1 = 1; // set 13V current draw (battery) to be input
     ANSELB1 = 1; // enable analog reading
-    #endif
 
-    #if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD )
     TRISB0 = 1; // set 5V current draw (payload logic + motor) to be input
     ANSELB0 = 1; // enable analog reading
-    #endif
 
     TRISC7 = 1; // set +BATT current draw (battery) to be input
     ANSELC7 = 1; // enable analog reading
@@ -51,16 +43,6 @@ void pin_init(void) {
 
     TRISC3 = 1; // set +13V voltage to be input
     ANSELC3 = 1; // enable analog reading
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD)    
-    //setup motor pins
-    LATB3 = !MOTOR_ON; // start with motor disabled
-    TRISB3 = 0; // allow motor to be toggled
-    
-    TRISB5 = 0; // set motor input to be output
-    
-    TRISB2 = 1; // set motor current draw (battery/5V) to be input
-    ANSELB2 = 1; // enable analog reading
-#endif
 }
 void RED_LED_SET(bool value) {
     LATA2 = !value ^ LED_ON;
@@ -73,11 +55,11 @@ void BLUE_LED_SET(bool value) {
 void WHITE_LED_SET(bool value) {
     LATA0 = !value ^ LED_ON;
 }
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
+
 void CAN_5V_SET(bool value) {
     LATA3 = !value ^ CAN_5V_ON;
 }
-#endif
+
 void BATTERY_CHARGER_EN(bool value) {
     LATA5 = !value ^ CHG_BATT_ON;
 }
@@ -105,17 +87,6 @@ uint16_t get_batt_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_batt;
 }
 
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_PAYLOAD || BOARD_UNIQUE_ID == BOARD_ID_CHARGING_AIRBRAKE)
-void update_motor_curr_low_pass(void) {
-    double new_curr_reading = ADCC_GetSingleConversion(channel_MOTOR_CURR) / CURR_MOTOR_RESISTOR;
-    low_pass_curr_motor = alpha_low * low_pass_curr_motor + (1.0 - alpha_low) * new_curr_reading;
-}
-
-uint16_t get_motor_curr_low_pass(void) {
-    return (uint16_t)low_pass_curr_motor;
-}    
-#endif
-#if (BOARD_UNIQUE_ID == BOARD_ID_CHARGING_CAN)
 void update_13v_curr_low_pass(void) {
     double new_curr_reading = ADCC_GetSingleConversion(channel_POWER_V13) * CONVERSION_ADC_TO_V / CURR_13V_RESISTOR;
     low_pass_curr_13v = alpha_low * low_pass_curr_13v + (1.0 - alpha_low) * new_curr_reading;
@@ -133,4 +104,4 @@ void update_5v_curr_low_pass(void) {
 uint16_t get_5v_curr_low_pass(void) {
     return (uint16_t)low_pass_curr_5v;
 }
-#endif
+
