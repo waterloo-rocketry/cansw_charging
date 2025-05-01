@@ -1,15 +1,12 @@
-#include "canlib/can.h"
-#include "canlib/can_common.h"
-#include "canlib/message_types.h"
-#include "canlib/pic18f26k83/pic18f26k83_can.h"
-#include "canlib/pic18f26k83/pic18f26k83_timer.h"
-#include "canlib/util/can_tx_buffer.h"
+#include "canlib/canlib.h"
 
 #include "mcc_generated_files/adcc.h"
 #include "mcc_generated_files/fvr.h"
 
 #include "error_checks.h"
 #include "platform.h"
+
+#include "timer.h"
 
 //******************************************************************************
 //                              STATUS CHECKS                                 //
