@@ -24,28 +24,30 @@ bool check_battery_voltage_error(void) {
         uint8_t batt_data[2] = {0};
         batt_data[0] = (batt_voltage_mV >> 8) & 0xff;
         batt_data[1] = (batt_voltage_mV >> 0) & 0xff;
-        enum BOARD_STATUS error_code = batt_voltage_mV < UNDERVOLTAGE_THRESHOLD_BATT_mV
-                                           ? E_BATT_UNDER_VOLTAGE
-                                           : E_BATT_OVER_VOLTAGE;
 
+		uint32_t gen_err_bitfield = 0;
+		if(batt_voltage_mV < UNDERVOLTAGE_THRESHOLD_BATT_mV){
+		    gen_err_bitfield |= (1 << E_12V_UNDER_VOLTAGE_OFFSET);
+		}else{
+		    gen_err_bitfield |= (1 << E_12V_OVER_VOLTAGE_OFFSET);
+		}
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, error_code, batt_data, 2, &error_msg);
+        build_general_board_status_msg(PRIO_MEDIUM, timestamp, gen_err_bitfield, 0, &error_msg);
         txb_enqueue(&error_msg);
 
         // shit's bad yo
         return false;
     }
-    else
-    {
+
         can_msg_t batt_volt_msg; // lipo battery voltage
         build_analog_data_msg(
-            millis(),
+			PRIO_LOW, millis(),
             SENSOR_BATT_VOLT,
             (uint16_t)(ADCC_GetSingleConversion(channel_BATT_VOLT) * BATT_RESISTANCE_DIVIDER),
             &batt_volt_msg
             );
         txb_enqueue(&batt_volt_msg);
-    }
+
     // things look ok
     return true;
 }
@@ -60,7 +62,7 @@ bool check_battery_current_error(void) {
         curr_data[1] = (curr_draw_mA >> 0) & 0xff;
 
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_BATT_OVER_CURRENT, curr_data, 2, &error_msg);
+        build_general_board_status_msg(PRIO_MEDIUM, timestamp, (1 << E_12V_OVER_CURRENT_OFFSET), 0, &error_msg);
         txb_enqueue(&error_msg);
         return false;
     }
@@ -79,7 +81,7 @@ bool check_5v_current_error(void) {
         curr_data[1] = (curr_draw_mA >> 0) & 0xff;
 
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_5V_OVER_CURRENT, curr_data, 2, &error_msg);
+        build_general_board_status_msg(PRIO_MEDIUM, timestamp, (1 << E_5V_OVER_CURRENT_OFFSET), 0, &error_msg);
         txb_enqueue(&error_msg);
         return false;
     }
@@ -98,7 +100,7 @@ bool check_13v_current_error(void) {
         curr_data[1] = (curr_draw_mA >> 0) & 0xff;
 
         can_msg_t error_msg;
-        build_board_stat_msg(timestamp, E_13V_OVER_CURRENT, curr_data, 2, &error_msg);
+        build_general_board_status_msg(PRIO_MEDIUM, timestamp, 0, 1, &error_msg);
         txb_enqueue(&error_msg);
         return false;
     }
