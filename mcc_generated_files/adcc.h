@@ -70,9 +70,6 @@
  */
 
 typedef uint16_t adc_result_t;
-#ifndef int24_t
-typedef signed short long int int24_t;
-#endif
 
 /** ADC Channel Definition
 

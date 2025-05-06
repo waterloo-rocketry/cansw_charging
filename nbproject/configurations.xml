@@ -43,9 +43,17 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="canlib" displayName="canlib" projectFiles="true">
+        <logicalFolder name="f1" displayName="message" projectFiles="true">
+          <itemPath>canlib/message/msg_actuator.c</itemPath>
+          <itemPath>canlib/message/msg_common.c</itemPath>
+          <itemPath>canlib/message/msg_general.c</itemPath>
+          <itemPath>canlib/message/msg_gps.c</itemPath>
+          <itemPath>canlib/message/msg_recovery.c</itemPath>
+          <itemPath>canlib/message/msg_sensor.c</itemPath>
+          <itemPath>canlib/message/msg_state_est.c</itemPath>
+        </logicalFolder>
         <logicalFolder name="pic18f26k83" displayName="pic18f26k83" projectFiles="true">
           <itemPath>canlib/pic18f26k83/pic18f26k83_can.c</itemPath>
-          <itemPath>canlib/pic18f26k83/pic18f26k83_timer.c</itemPath>
         </logicalFolder>
         <logicalFolder name="util" displayName="util" projectFiles="true">
           <itemPath>canlib/util/can_tx_buffer.c</itemPath>
@@ -53,7 +61,6 @@
           <itemPath>canlib/util/timing_util.c</itemPath>
           <itemPath>canlib/util/safe_ring_buffer.c</itemPath>
         </logicalFolder>
-        <itemPath>canlib/can_common.c</itemPath>
       </logicalFolder>
       <logicalFolder name="mcc_generated_files"
                      displayName="mcc_generated_files"
@@ -61,11 +68,13 @@
         <itemPath>mcc_generated_files/fvr.c</itemPath>
         <itemPath>mcc_generated_files/adcc.c</itemPath>
       </logicalFolder>
+      <logicalFolder name="f1" displayName="rocketlib" projectFiles="true">
+        <itemPath>rocketlib/pic18f26k83/timer.c</itemPath>
+      </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>device_config.c</itemPath>
       <itemPath>platform.c</itemPath>
       <itemPath>error_checks.c</itemPath>
-      <itemPath>pwm.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -79,10 +88,10 @@
         <targetDevice>PIC18F26K83</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>PICkit3PlatformTool</platformTool>
+        <platformTool>snap</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>2.45</languageToolchainVersion>
-        <platform>4</platform>
+        <languageToolchainVersion>3.00</languageToolchainVersion>
+        <platform>2</platform>
       </toolsSet>
       <packs>
         <pack name="PIC18F-K_DFP" vendor="Microchip" version="1.13.292"/>
@@ -120,9 +129,11 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="BOARD_UNIQUE_ID=BOARD_ID_CHARGING_CAN"/>
+        <property key="define-macros"
+                  value="BOARD_TYPE_UNIQUE_ID=BOARD_TYPE_ID_POWER;BOARD_INST_UNIQUE_ID=BOARD_INST_ID_POWER_ROCKET"/>
         <property key="disable-optimizations" value="true"/>
-        <property key="extra-include-directories" value="canlib;mcc_generated_files"/>
+        <property key="extra-include-directories"
+                  value="canlib;mcc_generated_files;rocketlib/include"/>
         <property key="favor-optimization-for" value="-speed,+space"/>
         <property key="garbage-collect-data" value="true"/>
         <property key="garbage-collect-functions" value="true"/>
@@ -186,7 +197,7 @@
         <property key="input-libraries" value="libm"/>
         <property key="keep-generated-startup.as" value="false"/>
         <property key="link-in-c-library" value="true"/>
-        <property key="link-in-c-library-gcc" value="-mc90lib"/>
+        <property key="link-in-c-library-gcc" value=""/>
         <property key="link-in-peripheral-library" value="false"/>
         <property key="managed-stack" value="false"/>
         <property key="opt-xc8-linker-file" value="false"/>
